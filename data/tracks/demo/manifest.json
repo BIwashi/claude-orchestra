@@ -1,0 +1,23 @@
+{
+  "name": "Demo Track",
+  "description": "Template track for Claude Orchestra. Replace the section audio files with your own.",
+  "eventsPerSection": 8,
+  "maxParts": 4,
+  "sections": [
+    {
+      "id": "00-intro",
+      "name": "Introduction",
+      "loop": true,
+      "parts": [
+        { "file": "sections/00-intro/part-0.wav", "label": "Strings", "volume": 0.7 },
+        { "file": "sections/00-intro/part-1.wav", "label": "Woodwinds", "volume": 0.5 },
+        { "file": "sections/00-intro/part-2.wav", "label": "Brass", "volume": 0.6 },
+        { "file": "sections/00-intro/part-3.wav", "label": "Percussion", "volume": 0.4 }
+      ]
+    }
+  ],
+  "idle": {
+    "strategy": "sustain",
+    "fadeMs": 2000
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "instruments": [
+    {
+      "id": "piano",
+      "name": "Piano",
+      "octave": 4,
+      "harmonics": [
+        { "multiplier": 1, "amplitude": 1.0 },
+        { "multiplier": 2, "amplitude": 0.5 },
+        { "multiplier": 3, "amplitude": 0.15 },
+        { "multiplier": 4, "amplitude": 0.05 }
+      ],
+      "attack": 0.01,
+      "decay": 0.3,
+      "color": "\u001b[37m"
+    },
+    {
+      "id": "cello",
+      "name": "Cello",
+      "octave": 3,
+      "harmonics": [
+        { "multiplier": 1, "amplitude": 1.0 },
+        { "multiplier": 2, "amplitude": 0.7 },
+        { "multiplier": 3, "amplitude": 0.4 },
+        { "multiplier": 4, "amplitude": 0.2 },
+        { "multiplier": 5, "amplitude": 0.1 }
+      ],
+      "attack": 0.05,
+      "decay": 0.5,
+      "color": "\u001b[33m"
+    },
+    {
+      "id": "flute",
+      "name": "Flute",
+      "octave": 5,
+      "harmonics": [
+        { "multiplier": 1, "amplitude": 1.0 },
+        { "multiplier": 2, "amplitude": 0.1 },
+        { "multiplier": 3, "amplitude": 0.02 }
+      ],
+      "attack": 0.02,
+      "decay": 0.2,
+      "color": "\u001b[36m"
+    },
+    {
+      "id": "marimba",
+      "name": "Marimba",
+      "octave": 4,
+      "harmonics": [
+        { "multiplier": 1, "amplitude": 1.0 },
+        { "multiplier": 4, "amplitude": 0.3 },
+        { "multiplier": 10, "amplitude": 0.1 }
+      ],
+      "attack": 0.005,
+      "decay": 0.15,
+      "color": "\u001b[35m"
+    },
+    {
+      "id": "clarinet",
+      "name": "Clarinet",
+      "octave": 4,
+      "harmonics": [
+        { "multiplier": 1, "amplitude": 1.0 },
+        { "multiplier": 3, "amplitude": 0.6 },
+        { "multiplier": 5, "amplitude": 0.3 },
+        { "multiplier": 7, "amplitude": 0.1 }
+      ],
+      "attack": 0.03,
+      "decay": 0.35,
+      "color": "\u001b[32m"
+    },
+    {
+      "id": "harp",
+      "name": "Harp",
+      "octave": 5,
+      "harmonics": [
+        { "multiplier": 1, "amplitude": 1.0 },
+        { "multiplier": 2, "amplitude": 0.4 },
+        { "multiplier": 3, "amplitude": 0.15 }
+      ],
+      "attack": 0.005,
+      "decay": 0.4,
+      "color": "\u001b[34m"
+    },
+    {
+      "id": "bell",
+      "name": "Bell",
+      "octave": 6,
+      "harmonics": [
+        { "multiplier": 1, "amplitude": 1.0 },
+        { "multiplier": 2.76, "amplitude": 0.5 },
+        { "multiplier": 5.4, "amplitude": 0.3 },
+        { "multiplier": 8.93, "amplitude": 0.1 }
+      ],
+      "attack": 0.001,
+      "decay": 0.6,
+      "color": "\u001b[93m"
+    },
+    {
+      "id": "strings",
+      "name": "Strings",
+      "octave": 4,
+      "harmonics": [
+        { "multiplier": 1, "amplitude": 1.0 },
+        { "multiplier": 2, "amplitude": 0.8 },
+        { "multiplier": 3, "amplitude": 0.5 },
+        { "multiplier": 4, "amplitude": 0.3 },
+        { "multiplier": 5, "amplitude": 0.2 },
+        { "multiplier": 6, "amplitude": 0.1 }
+      ],
+      "attack": 0.08,
+      "decay": 0.6,
+      "color": "\u001b[31m"
+    }
+  ]
+}

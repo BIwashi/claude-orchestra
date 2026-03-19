@@ -1,0 +1,13 @@
+{
+  "name": "claude-orchestra",
+  "version": "1.0.0",
+  "description": "Turn multiple Claude Code sessions into an orchestra",
+  "bin": {
+    "claude-orchestra": "./bin/conductor.js"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT"
+}
