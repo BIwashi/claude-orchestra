@@ -1,5 +1,7 @@
 # 🎵 Claude Orchestra
 
+[日本語](docs/README.ja.md)
+
 Turn multiple Claude Code sessions into a live orchestra. Each session gets assigned an instrument, and every tool call becomes a musical note.
 
 ## How It Works
