@@ -1,0 +1,14 @@
+{
+  "name": "claude-orchestra",
+  "version": "1.0.0",
+  "description": "Turn multiple Claude Code sessions into a live orchestra",
+  "author": {
+    "name": "BIwashi",
+    "url": "https://github.com/BIwashi"
+  },
+  "repository": "https://github.com/BIwashi/claude-orchestra",
+  "license": "MIT",
+  "keywords": ["audio", "music", "orchestra", "multi-session"],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json"
+}

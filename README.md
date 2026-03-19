@@ -38,36 +38,39 @@ Plays pre-recorded audio organized into sections and parts:
 - Node.js ≥ 20
 - ffmpeg (`brew install ffmpeg`)
 
-### Install
+### Install as Claude Code Plugin
 
 ```bash
-# Clone
-ghq get github.com/BIwashi/claude-orchestra
-
-# Install hooks into Claude Code settings
-./bin/install.sh
-
-# Start the conductor
-node bin/conductor.js start
+claude plugin install claude-orchestra
 ```
 
-Or use the `/orchestra` skill if you have the repo cloned:
+Then start the conductor:
+
+```bash
+npx claude-orchestra start --daemon
+```
+
+Or use the skill inside Claude Code:
 
 ```
-/orchestra setup
+/claude-orchestra:orchestra setup
 ```
+
+### Install via npx (no install needed)
+
+```bash
+# Start the conductor directly
+npx claude-orchestra start --daemon
+```
+
+> **Note**: When using npx without the plugin, you need to manually configure hooks. The plugin install handles this automatically.
 
 ### Using a Sample Track
 
 ```bash
-# List available tracks
-node bin/conductor.js track list
-
-# Switch to a track
-node bin/conductor.js track use beethoven-9th
-
-# Switch back to synth
-node bin/conductor.js config set mode synth
+npx claude-orchestra track list
+npx claude-orchestra track use beethoven-9th
+npx claude-orchestra config set mode synth   # switch back
 ```
 
 ## CLI Reference
@@ -129,7 +132,7 @@ claude-orchestra config set <k> <v>  Update a config value
 Split a single audio file into sections with ffmpeg:
 
 ```bash
-./bin/slice-track.sh input.mp3 \
+npx claude-orchestra-slice input.mp3 \
   --timestamps 0:00,1:30,3:00,4:30 \
   --output ~/.claude-orchestra/tracks/my-track/
 ```
@@ -138,15 +141,15 @@ See [`data/tracks/demo/`](data/tracks/demo/) for a template.
 
 ## `/orchestra` Skill
 
-If the project is cloned locally, you can use the Claude Code skill:
+After installing the plugin, the following skill commands are available:
 
 | Command | Description |
 |---|---|
-| `/orchestra` | Install hooks and start the conductor |
-| `/orchestra status` | Show orchestra status |
-| `/orchestra stop` | Stop the conductor |
-| `/orchestra track <name>` | Switch to a sample track |
-| `/orchestra synth` | Switch back to synth mode |
+| `/claude-orchestra:orchestra` | Check prerequisites and start the conductor |
+| `/claude-orchestra:orchestra status` | Show orchestra status |
+| `/claude-orchestra:orchestra stop` | Stop the conductor |
+| `/claude-orchestra:orchestra track <name>` | Switch to a sample track |
+| `/claude-orchestra:orchestra synth` | Switch back to synth mode |
 
 ## Config
 
@@ -163,11 +166,12 @@ Stored at `~/.claude-orchestra/config.json`:
 ## Architecture
 
 ```
+.claude-plugin/
+  plugin.json       Plugin manifest
+
 bin/
   conductor.js      CLI + event loop (the "conductor")
   hook-musician.sh  Ultra-light hook (<5ms) — drops event JSON for the conductor
-  install.sh        Registers hooks in Claude Code settings
-  uninstall.sh      Removes hooks
   slice-track.sh    ffmpeg helper for splitting audio into sections
 
 lib/
@@ -180,6 +184,12 @@ lib/
   event-watcher.js  Filesystem watcher for event JSON files
   registry.js       Session → instrument assignment with persistence
   tone-cache.js     ffmpeg tone generation and caching
+
+skills/
+  orchestra/        /orchestra skill for setup and control
+
+hooks/
+  hooks.json        Plugin hook definitions (SessionStart, PostToolUse, SessionEnd)
 
 data/
   instruments.json  Instrument definitions (harmonics, attack, decay)
