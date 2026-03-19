@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/bin/hook-musician.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/hook-lifecycle.sh"
           }
         ]
       }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/bin/hook-musician.sh"
+            "command": "${CLAUDE_PLUGIN_ROOT}/bin/hook-lifecycle.sh"
           }
         ]
       }
