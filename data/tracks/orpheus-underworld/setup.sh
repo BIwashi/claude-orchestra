@@ -10,7 +10,7 @@
 # Prerequisites:
 #   - curl
 #   - ffmpeg
-#   - demucs (pip install demucs)
+#   - demucs via uv (recommended) or pip install demucs
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
