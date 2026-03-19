@@ -7,6 +7,7 @@ This is a template for creating custom Claude Orchestra tracks.
 1. **Prepare your audio**: Split your music into sections, with each section having separate part files (e.g., strings, woodwinds, brass, percussion).
 
 2. **Organize files**:
+
    ```
    my-track/
      manifest.json
@@ -42,15 +43,15 @@ You still need to separate parts manually (or use stems from a DAW).
 
 ## Manifest format
 
-| Field | Description |
-|---|---|
-| `name` | Display name for the track |
-| `eventsPerSection` | Tool events before advancing to next section |
-| `maxParts` | Maximum simultaneous parts |
-| `sections[].id` | Directory name under `sections/` |
-| `sections[].loop` | Whether to loop this section during idle |
-| `sections[].parts[].file` | Relative path to audio file |
-| `sections[].parts[].label` | Display name for the part |
-| `sections[].parts[].volume` | Part volume (0-1) |
-| `idle.strategy` | `"sustain"` or `"loop"` |
-| `idle.fadeMs` | Fade duration when idle (ms) |
+| Field                       | Description                                  |
+| --------------------------- | -------------------------------------------- |
+| `name`                      | Display name for the track                   |
+| `eventsPerSection`          | Tool events before advancing to next section |
+| `maxParts`                  | Maximum simultaneous parts                   |
+| `sections[].id`             | Directory name under `sections/`             |
+| `sections[].loop`           | Whether to loop this section during idle     |
+| `sections[].parts[].file`   | Relative path to audio file                  |
+| `sections[].parts[].label`  | Display name for the part                    |
+| `sections[].parts[].volume` | Part volume (0-1)                            |
+| `idle.strategy`             | `"sustain"` or `"loop"`                      |
+| `idle.fadeMs`               | Fade duration when idle (ms)                 |

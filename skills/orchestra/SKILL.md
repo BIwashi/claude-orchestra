@@ -8,6 +8,7 @@ description: Setup and control Claude Orchestra - turn Claude Code sessions into
 Parse the user's input to determine the subcommand. If no subcommand is given, default to `setup`.
 
 Subcommands:
+
 - `setup` (default): Check prerequisites and start the conductor
 - `status`: Show current orchestra status
 - `stop`: Stop the conductor
@@ -17,6 +18,7 @@ Subcommands:
 ## Setup (`/orchestra` or `/orchestra setup`)
 
 1. Check prerequisites:
+
 ```bash
 command -v ffmpeg && echo "ffmpeg: OK" || echo "ffmpeg: MISSING (brew install ffmpeg)"
 command -v afplay && echo "afplay: OK" || echo "afplay: MISSING (macOS only)"
@@ -24,6 +26,7 @@ command -v node && echo "node: $(node --version)" || echo "node: MISSING"
 ```
 
 2. If prerequisites are met, start the conductor:
+
 ```bash
 npx claude-orchestra start --daemon
 ```
