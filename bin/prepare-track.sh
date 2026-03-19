@@ -16,7 +16,7 @@
 #
 # Prerequisites:
 #   - ffmpeg (brew install ffmpeg)
-#   - demucs (pip install demucs) — optional, skipped with --skip-demucs
+#   - demucs via uv (recommended) or pip install demucs — optional, skipped with --skip-demucs
 #
 # Output:
 #   Creates a track directory with manifest.json and sections/ containing
@@ -36,7 +36,7 @@ SKIP_DEMUCS=false
 
 # --- Parse args ---
 usage() {
-  head -24 "$0" | tail -22 | sed 's/^# \?//'
+  head -23 "$0" | tail -22 | sed 's/^# \?//'
   exit 1
 }
 
@@ -75,10 +75,22 @@ if ! command -v ffmpeg &>/dev/null; then
   exit 1
 fi
 
-if [ "$SKIP_DEMUCS" = false ] && ! command -v demucs &>/dev/null; then
-  echo "Error: demucs is required (pip install demucs)"
-  echo "       Or use --skip-demucs to skip stem separation"
-  exit 1
+# Resolve demucs command (direct > uvx > uv tool run)
+DEMUCS_CMD=""
+if [ "$SKIP_DEMUCS" = false ]; then
+  if command -v demucs &>/dev/null; then
+    DEMUCS_CMD="demucs"
+  elif command -v uvx &>/dev/null; then
+    DEMUCS_CMD="uvx --with torchcodec demucs"
+  elif command -v uv &>/dev/null; then
+    DEMUCS_CMD="uv tool run --with torchcodec demucs"
+  else
+    echo "Error: demucs or uv is required"
+    echo "       Install uv (recommended): curl -LsSf https://astral.sh/uv/install.sh | sh"
+    echo "       Or: pip install demucs"
+    echo "       Or use --skip-demucs to skip stem separation"
+    exit 1
+  fi
 fi
 
 # --- Resolve names and paths ---
@@ -100,7 +112,7 @@ STEMS_DIR="$TEMP_DIR/stems"
 
 if [ "$SKIP_DEMUCS" = false ]; then
   echo "   [1/3] Separating stems with demucs ($DEMUCS_MODEL)..."
-  demucs --two-stems=no -n "$DEMUCS_MODEL" -o "$TEMP_DIR/demucs_out" "$INPUT" 2>&1 | tail -3
+  $DEMUCS_CMD -n "$DEMUCS_MODEL" -o "$TEMP_DIR/demucs_out" "$INPUT" 2>&1 | tail -3
 
   # demucs outputs to: <out>/<model>/<track_name>/
   DEMUCS_OUT="$TEMP_DIR/demucs_out/$DEMUCS_MODEL/$INPUT_NAME"
