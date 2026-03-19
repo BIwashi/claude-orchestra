@@ -145,13 +145,13 @@ See [`data/tracks/demo/`](data/tracks/demo/) for a template.
 
 After installing the plugin, the following skill commands are available:
 
-| Command | Description |
-|---|---|
-| `/claude-orchestra:orchestra` | Check prerequisites and start the conductor |
-| `/claude-orchestra:orchestra status` | Show orchestra status |
-| `/claude-orchestra:orchestra stop` | Stop the conductor |
-| `/claude-orchestra:orchestra track <name>` | Switch to a sample track |
-| `/claude-orchestra:orchestra synth` | Switch back to synth mode |
+| Command                                    | Description                                 |
+| ------------------------------------------ | ------------------------------------------- |
+| `/claude-orchestra:orchestra`              | Check prerequisites and start the conductor |
+| `/claude-orchestra:orchestra status`       | Show orchestra status                       |
+| `/claude-orchestra:orchestra stop`         | Stop the conductor                          |
+| `/claude-orchestra:orchestra track <name>` | Switch to a sample track                    |
+| `/claude-orchestra:orchestra synth`        | Switch back to synth mode                   |
 
 ## Config
 

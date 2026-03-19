@@ -144,13 +144,13 @@ npx claude-orchestra-slice input.mp3 \
 
 プラグインインストール後、以下のスキルコマンドが利用可能:
 
-| コマンド | 説明 |
-|---|---|
-| `/claude-orchestra:orchestra` | 前提チェックと指揮者の起動 |
-| `/claude-orchestra:orchestra status` | オーケストラの状態を表示 |
-| `/claude-orchestra:orchestra stop` | 指揮者を停止 |
-| `/claude-orchestra:orchestra track <name>` | サンプルトラックに切替 |
-| `/claude-orchestra:orchestra synth` | シンセモードに切替 |
+| コマンド                                   | 説明                       |
+| ------------------------------------------ | -------------------------- |
+| `/claude-orchestra:orchestra`              | 前提チェックと指揮者の起動 |
+| `/claude-orchestra:orchestra status`       | オーケストラの状態を表示   |
+| `/claude-orchestra:orchestra stop`         | 指揮者を停止               |
+| `/claude-orchestra:orchestra track <name>` | サンプルトラックに切替     |
+| `/claude-orchestra:orchestra synth`        | シンセモードに切替         |
 
 ## 設定
 

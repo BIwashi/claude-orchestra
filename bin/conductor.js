@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync, readdirSync, symlinkSync } from 'node:fs';
+import {
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  unlinkSync,
+  readdirSync,
+  symlinkSync,
+} from 'node:fs';
 import { join, resolve, basename } from 'node:path';
 import { EventWatcher, EVENTS_DIR } from '../lib/event-watcher.js';
 import { SessionRegistry } from '../lib/registry.js';
-import { createEngine, loadConfig, CONFIG_PATH, DEFAULT_CONFIG } from '../lib/engine.js';
+import { createEngine, loadConfig, CONFIG_PATH } from '../lib/engine.js';
 import { TRACKS_DIR } from '../lib/sample-engine.js';
 
 const ORCHESTRA_DIR = join(process.env.HOME, '.claude-orchestra');
@@ -56,9 +64,13 @@ function stop() {
     process.kill(pid, 'SIGTERM');
     unlinkSync(PID_FILE);
     console.log(`Conductor stopped (PID ${pid}).`);
-  } catch (e) {
+  } catch (_e) {
     console.log('Conductor process not found, cleaning up PID file.');
-    try { unlinkSync(PID_FILE); } catch {}
+    try {
+      unlinkSync(PID_FILE);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -83,7 +95,9 @@ function showStatus() {
       } else {
         for (const [id, info] of Object.entries(sessions)) {
           const elapsed = Math.round((Date.now() - info.joinedAt) / 1000);
-          console.log(`   🎻 ${info.instrumentId.padEnd(10)} │ session: ${id.slice(0, 8)}… │ ${elapsed}s ago`);
+          console.log(
+            `   🎻 ${info.instrumentId.padEnd(10)} │ session: ${id.slice(0, 8)}… │ ${elapsed}s ago`,
+          );
         }
       }
     } catch (e) {
@@ -134,7 +148,7 @@ function trackList() {
   }
 
   const entries = readdirSync(TRACKS_DIR, { withFileTypes: true });
-  const tracks = entries.filter(e => e.isDirectory());
+  const tracks = entries.filter((e) => e.isDirectory());
 
   if (tracks.length === 0) {
     console.log('   No tracks installed.');
@@ -150,7 +164,9 @@ function trackList() {
       try {
         const m = JSON.parse(readFileSync(manifestPath, 'utf-8'));
         label = `${track.name} - ${m.name}`;
-      } catch {}
+      } catch {
+        /* ignore */
+      }
     }
     const active = config.track === track.name ? ' (active)' : '';
     console.log(`   ${label}${active}`);
@@ -279,7 +295,7 @@ async function start() {
 
   // Load instruments
   const instrumentsData = JSON.parse(
-    readFileSync(new URL('../data/instruments.json', import.meta.url), 'utf-8')
+    readFileSync(new URL('../data/instruments.json', import.meta.url), 'utf-8'),
   );
   const instruments = instrumentsData.instruments;
 
@@ -331,7 +347,11 @@ async function start() {
     watcher.stop();
     engine.stopAll();
     clearInterval(ambientInterval);
-    try { unlinkSync(PID_FILE); } catch {}
+    try {
+      unlinkSync(PID_FILE);
+    } catch {
+      /* ignore */
+    }
     process.exit(0);
   };
 
