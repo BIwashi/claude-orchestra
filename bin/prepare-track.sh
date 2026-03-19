@@ -184,31 +184,26 @@ echo "   Sections: ${#TS_ARRAY[@]}"
 # --- Step 3: Generate manifest ---
 echo "   [3/3] Generating manifest.json..."
 
-# Map demucs stem names to orchestra labels
-declare -A STEM_LABELS
-STEM_LABELS["drums"]="Percussion"
-STEM_LABELS["bass"]="Bass"
-STEM_LABELS["vocals"]="Vocals"
-STEM_LABELS["other"]="Ensemble"
-STEM_LABELS["guitar"]="Guitar"
-STEM_LABELS["piano"]="Piano"
-STEM_LABELS["main"]="Main"
-
-# Default volumes per stem
-declare -A STEM_VOLUMES
-STEM_VOLUMES["drums"]="0.5"
-STEM_VOLUMES["bass"]="0.6"
-STEM_VOLUMES["vocals"]="0.4"
-STEM_VOLUMES["other"]="0.7"
-STEM_VOLUMES["guitar"]="0.6"
-STEM_VOLUMES["piano"]="0.6"
-STEM_VOLUMES["main"]="0.7"
+# Build stem names as JSON array (no jq dependency)
+STEM_NAMES_JSON="["
+for i in "${!STEM_NAMES[@]}"; do
+  [ "$i" -gt 0 ] && STEM_NAMES_JSON+=","
+  STEM_NAMES_JSON+="\"${STEM_NAMES[$i]}\""
+done
+STEM_NAMES_JSON+="]"
 
 node -e "
+const stemLabels = {
+  drums: 'Percussion', bass: 'Bass', vocals: 'Vocals',
+  other: 'Ensemble', guitar: 'Guitar', piano: 'Piano', main: 'Main',
+};
+const stemVolumes = {
+  drums: 0.5, bass: 0.6, vocals: 0.4,
+  other: 0.7, guitar: 0.6, piano: 0.6, main: 0.7,
+};
+
 const sections = [];
-const stemNames = $(printf '%s\n' "${STEM_NAMES[@]}" | jq -R . | jq -s .);
-const stemLabels = $(for k in "${!STEM_LABELS[@]}"; do echo "\"$k\":\"${STEM_LABELS[$k]}\""; done | paste -sd, | sed 's/^/{/;s/$/}/');
-const stemVolumes = $(for k in "${!STEM_VOLUMES[@]}"; do echo "\"$k\":${STEM_VOLUMES[$k]}"; done | paste -sd, | sed 's/^/{/;s/$/}/');
+const stemNames = ${STEM_NAMES_JSON};
 
 for (let i = 0; i < ${#TS_ARRAY[@]}; i++) {
   const id = String(i).padStart(2, '0') + '-section-' + i;
