@@ -10,11 +10,15 @@
     ".claude-plugin/",
     "bin/",
     "lib/",
-    "data/",
+    "data/instruments.json",
+    "data/tracks/demo/",
+    "data/tracks/ode-to-joy/source.mid",
+    "data/tracks/orpheus-underworld/README.md",
     "skills/",
     "hooks/",
     "docs/",
-    "LICENSES-THIRD-PARTY.md"
+    "LICENSES-THIRD-PARTY.md",
+    "LICENSE"
   ],
   "keywords": [
     "claude-code",
