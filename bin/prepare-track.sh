@@ -81,9 +81,9 @@ if [ "$SKIP_DEMUCS" = false ]; then
   if command -v demucs &>/dev/null; then
     DEMUCS_CMD="demucs"
   elif command -v uvx &>/dev/null; then
-    DEMUCS_CMD="uvx --with torchcodec demucs"
+    DEMUCS_CMD="uvx --with 'numpy<2' demucs"
   elif command -v uv &>/dev/null; then
-    DEMUCS_CMD="uv tool run --with torchcodec demucs"
+    DEMUCS_CMD="uv tool run --with 'numpy<2' demucs"
   else
     echo "Error: demucs or uv is required"
     echo "       Install uv (recommended): curl -LsSf https://astral.sh/uv/install.sh | sh"

@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { SessionRegistry } from '../lib/registry.js';
-import { existsSync, mkdirSync } from 'node:fs';
+import { SessionRegistry, getOrchestraDir, getRegistryPath } from '../lib/registry.js';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-
-const ORCHESTRA_DIR = join(process.env.HOME, '.claude-orchestra');
-const REGISTRY_PATH = join(ORCHESTRA_DIR, 'registry.json');
+import { tmpdir } from 'node:os';
 
 const instruments = [
   { id: 'piano', name: 'Piano', octave: 4 },
@@ -14,17 +12,28 @@ const instruments = [
 
 describe('SessionRegistry', () => {
   let registry;
+  let tempHome;
   let backupExists = false;
   let backupData = null;
+  let originalOrchestraDir;
 
   beforeEach(() => {
+    originalOrchestraDir = process.env.CLAUDE_ORCHESTRA_DIR;
+    tempHome = mkdtempSync(join(tmpdir(), 'claude-orchestra-registry-'));
+    process.env.CLAUDE_ORCHESTRA_DIR = join(tempHome, '.claude-orchestra');
+
+    const orchestraDir = getOrchestraDir();
+    const registryPath = getRegistryPath();
+
     // Backup existing registry
-    if (existsSync(REGISTRY_PATH)) {
+    if (existsSync(registryPath)) {
       backupExists = true;
-      const { readFileSync } = require('node:fs');
-      backupData = readFileSync(REGISTRY_PATH, 'utf-8');
+      backupData = readFileSync(registryPath, 'utf-8');
+    } else {
+      backupExists = false;
+      backupData = null;
     }
-    mkdirSync(ORCHESTRA_DIR, { recursive: true });
+    mkdirSync(orchestraDir, { recursive: true });
     registry = new SessionRegistry(instruments);
     // Clear any loaded sessions
     registry.sessions.clear();
@@ -32,11 +41,20 @@ describe('SessionRegistry', () => {
   });
 
   afterEach(() => {
+    const registryPath = getRegistryPath();
+
     // Restore backup
     if (backupExists && backupData !== null) {
-      const { writeFileSync } = require('node:fs');
-      writeFileSync(REGISTRY_PATH, backupData);
+      writeFileSync(registryPath, backupData);
     }
+
+    if (originalOrchestraDir === undefined) {
+      delete process.env.CLAUDE_ORCHESTRA_DIR;
+    } else {
+      process.env.CLAUDE_ORCHESTRA_DIR = originalOrchestraDir;
+    }
+
+    rmSync(tempHome, { recursive: true, force: true });
   });
 
   it('registers a new session with an instrument', () => {
