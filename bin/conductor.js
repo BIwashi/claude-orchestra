@@ -15,6 +15,7 @@ import { EventWatcher, EVENTS_DIR } from '../lib/event-watcher.js';
 import { SessionRegistry } from '../lib/registry.js';
 import { createEngine, loadConfig, CONFIG_PATH } from '../lib/engine.js';
 import { TRACKS_DIR } from '../lib/sample-engine.js';
+import { consumeVolumeSignal, readVolumeSignal, writeVolumeSignal } from '../lib/volume-signal.js';
 import {
   bold,
   box,
@@ -64,6 +65,11 @@ if (command === 'track') {
 
 if (command === 'config') {
   handleConfigCommand(subCommand);
+  process.exit(0);
+}
+
+if (command === 'volume') {
+  handleVolumeCommand();
   process.exit(0);
 }
 
@@ -334,6 +340,7 @@ async function start() {
   // Ambient state
   let lastEventTime = Date.now();
   let ambientInterval = null;
+  let volumeSignalInterval = null;
   let ambientChordIndex = 0;
 
   // Handle events
@@ -364,12 +371,27 @@ async function start() {
     }
   }, 4000);
 
+  // Volume signal polling (every 2s)
+  volumeSignalInterval = setInterval(() => {
+    try {
+      const nextVolume = consumeVolumeSignal();
+      if (nextVolume === null) return;
+      config.volume = nextVolume;
+      engine.setVolume(nextVolume);
+      writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+      log(`Volume changed to ${nextVolume}`);
+    } catch (e) {
+      log(`Failed to process volume signal: ${e.message}`);
+    }
+  }, 2000);
+
   // Graceful shutdown
   const cleanup = () => {
     console.log('\n🎵 Conductor stopping...');
     watcher.stop();
     engine.stopAll();
     clearInterval(ambientInterval);
+    clearInterval(volumeSignalInterval);
     try {
       unlinkSync(PID_FILE);
     } catch {
@@ -429,6 +451,24 @@ function handleEvent(event, registry, engine) {
 
   // Normal tool event
   engine.handleToolEvent(event, instrument, registry.count);
+}
+
+function handleVolumeCommand() {
+  const requestedVolume = process.argv[3];
+  if (requestedVolume === undefined) {
+    const pendingVolume = readVolumeSignal();
+    const currentVolume = pendingVolume ?? loadConfig().volume;
+    console.log(currentVolume);
+    return;
+  }
+  try {
+    mkdirSync(ORCHESTRA_DIR, { recursive: true });
+    const volume = writeVolumeSignal(requestedVolume);
+    console.log(`Volume signal written: ${volume}`);
+  } catch (e) {
+    console.error(e.message);
+    process.exit(1);
+  }
 }
 
 function log(msg) {
