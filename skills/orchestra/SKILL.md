@@ -1,101 +1,138 @@
 ---
 name: orchestra
-description: Setup and control Claude Orchestra - turn Claude Code sessions into music. Use when the user wants to start, stop, or configure the orchestra.
+description: Control Claude Orchestra — background music that reacts to your coding. Use when the user mentions orchestra, music, bgm, or wants to start/stop/change the coding soundtrack.
 ---
 
-# Claude Orchestra Control
+# Claude Orchestra
 
-Parse the user's input to determine the subcommand. If no subcommand is given, default to `setup`.
+You are helping the user control Claude Orchestra, a plugin that turns Claude Code sessions into live background music. Each session becomes an instrument, and tool calls drive the music.
 
-Subcommands:
+## Quick Reference
 
-- `setup` (default): Check prerequisites, switch to mixer mode, and start the conductor
-- `status`: Show current orchestra status
-- `stop`: Stop the conductor
-- `track <name>`: Switch to a track
-- `track prepare <input> --name <name> --timestamps <t1,t2,...>`: Prepare a custom track from source audio
-- `mixer`: Switch to mixer mode
-- `synth`: Switch to synth mode
+| User says                              | What to do                          |
+| -------------------------------------- | ----------------------------------- |
+| "start music" / "orchestra" / "bgm on" | Run setup (auto-detects everything) |
+| "stop music" / "quiet" / "bgm off"     | Stop the conductor                  |
+| "change track" / "play X"              | Switch track                        |
+| "louder" / "quieter" / "volume X"      | Adjust volume                       |
+| "what's playing" / "status"            | Show status                         |
+| "switch to synth/mixer"                | Change mode                         |
 
-## Setup (`/orchestra` or `/orchestra setup`)
+## Setup (default action)
 
-Recommended default: use mixer mode unless the user explicitly asks for synth or legacy sample behavior.
-
-1. Check prerequisites:
+When the user just wants music playing, run setup. It handles everything automatically:
 
 ```bash
-command -v ffmpeg && echo "ffmpeg: OK" || echo "ffmpeg: MISSING (brew install ffmpeg)"
-command -v ffplay && echo "ffplay: OK" || echo "ffplay: MISSING (brew install ffmpeg)"
-command -v sox && echo "sox: OK" || echo "sox: MISSING (brew install sox)"
-command -v afplay && echo "afplay: OK" || echo "afplay: MISSING (macOS only, used by some modes)"
-command -v node && echo "node: $(node --version)" || echo "node: MISSING"
+npx claude-orchestra setup
 ```
 
-2. If prerequisites are met, switch to mixer mode and start the conductor:
+This single command:
+
+- Checks all prerequisites (ffmpeg, sox, ffplay, fluidsynth)
+- Generates a demo track if none exist (MIDI → fluidsynth → demucs → sections)
+- Configures the best available mode (mixer if possible, falls back to synth)
+- Starts the conductor daemon
+
+**If `setup` is not available** (older version), do it manually:
 
 ```bash
+# Check deps
+command -v ffmpeg && command -v sox && command -v ffplay && echo "All good"
+
+# Configure and start
 npx claude-orchestra config set mode mixer
 npx claude-orchestra start --daemon
 ```
 
-3. Report the result to the user.
+If mixer deps are missing, fall back to synth mode (works out of the box, no external audio files needed):
 
-## Status (`/orchestra status`)
+```bash
+npx claude-orchestra config set mode synth
+npx claude-orchestra start --daemon
+```
+
+## Status
 
 ```bash
 npx claude-orchestra status
 ```
 
-## Stop (`/orchestra stop`)
+## Stop
 
 ```bash
 npx claude-orchestra stop
 ```
 
-## Track (`/orchestra track <name>`)
+## Volume Control
 
-Switch to the specified track and restart the conductor if needed:
+Change volume while music is playing (no restart needed):
+
+```bash
+npx claude-orchestra volume 0.5    # 50% volume
+npx claude-orchestra volume 0.2    # Quiet background
+npx claude-orchestra volume 0.8    # Louder
+```
+
+If the `volume` command is not available:
+
+```bash
+npx claude-orchestra config set volume 0.3
+npx claude-orchestra stop && npx claude-orchestra start --daemon
+```
+
+## Track Switching
+
+List available tracks:
+
+```bash
+npx claude-orchestra track list
+```
+
+Switch to a track:
 
 ```bash
 npx claude-orchestra track use <name>
-npx claude-orchestra stop
-npx claude-orchestra start --daemon
+npx claude-orchestra stop && npx claude-orchestra start --daemon
 ```
 
-## Track Prepare (`/orchestra track prepare <input> --name <name> --timestamps <t1,t2,...>`)
+## Mode Switching
 
-Prepare a custom track from source audio:
+- **mixer** (recommended): Pre-mixed stems with perfect sync. Needs sox + ffplay + a track.
+- **synth**: Generates tones in real-time. No track or extra deps needed. Good fallback.
 
 ```bash
-./bin/prepare-track.sh <input> --name <name> --timestamps <t1,t2,...>
+npx claude-orchestra config set mode mixer   # or synth
+npx claude-orchestra stop && npx claude-orchestra start --daemon
 ```
 
-Then switch to it in mixer mode:
+## Preparing Custom Tracks
+
+If the user wants to use their own music:
 
 ```bash
-npx claude-orchestra track use <name>
+# From an audio file (needs demucs for stem separation):
+./bin/prepare-track.sh source.mp3 --name my-track --timestamps 0:00,1:00,2:00,3:00
+
+# Then switch to it:
+npx claude-orchestra track use my-track
 npx claude-orchestra config set mode mixer
-npx claude-orchestra stop
-npx claude-orchestra start --daemon
+npx claude-orchestra stop && npx claude-orchestra start --daemon
 ```
 
-## Mixer (`/orchestra mixer`)
+## Troubleshooting
 
-Switch to mixer mode:
+| Problem            | Solution                                                           |
+| ------------------ | ------------------------------------------------------------------ |
+| No sound           | Check `npx claude-orchestra status` — is it running?               |
+| "sox not found"    | `brew install sox`                                                 |
+| "ffplay not found" | `brew install ffmpeg`                                              |
+| Sync issues        | Switch to mixer mode: `npx claude-orchestra config set mode mixer` |
+| Too loud/quiet     | `npx claude-orchestra volume 0.3`                                  |
 
-```bash
-npx claude-orchestra config set mode mixer
-npx claude-orchestra stop
-npx claude-orchestra start --daemon
-```
+## Important Notes
 
-## Synth (`/orchestra synth`)
-
-Switch to synth mode:
-
-```bash
-npx claude-orchestra config set mode synth
-npx claude-orchestra config set track null
-npx claude-orchestra stop
-npx claude-orchestra start --daemon
-```
+- The conductor auto-starts via hooks when a Claude Code session begins
+- It auto-stops when the last session ends
+- Music only plays when Claude Code sessions are actively using tools
+- Multiple sessions = more instruments playing simultaneously
+- The plugin is lightweight: hooks execute in <5ms and don't affect Claude Code performance

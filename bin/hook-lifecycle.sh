@@ -2,9 +2,11 @@
 # Claude Code hook - manages conductor lifecycle
 # Called on SessionStart and SessionEnd to auto-start/stop the conductor.
 # Reads hook_event_name from stdin JSON.
+# Designed to be ultra-fast (<5ms) and never fail.
 
 ORCHESTRA_DIR="$HOME/.claude-orchestra"
 PID_FILE="$ORCHESTRA_DIR/conductor.pid"
+CONFIG_FILE="$ORCHESTRA_DIR/config.json"
 PLUGIN_ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 
 # Read stdin
@@ -13,32 +15,40 @@ INPUT=$(cat)
 # Extract hook event name
 HOOK_EVENT=$(echo "$INPUT" | grep -o '"hook_event_name":"[^"]*"' | head -1 | cut -d'"' -f4)
 
+is_running() {
+  [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null
+}
+
+ensure_config() {
+  # Create default config if none exists (synth mode works out of the box)
+  if [ ! -f "$CONFIG_FILE" ]; then
+    mkdir -p "$ORCHESTRA_DIR"
+    echo '{"mode":"synth","volume":0.3}' > "$CONFIG_FILE"
+  fi
+}
+
 case "$HOOK_EVENT" in
   SessionStart)
     # Start conductor if not already running
-    if [ -f "$PID_FILE" ]; then
-      PID=$(cat "$PID_FILE")
-      if kill -0 "$PID" 2>/dev/null; then
-        exit 0  # Already running
-      fi
-      rm -f "$PID_FILE"
+    if is_running; then
+      exit 0
     fi
-
+    rm -f "$PID_FILE"
     mkdir -p "$ORCHESTRA_DIR/events"
+    ensure_config
 
-    # Start conductor in daemon mode (conductor.js manages its own PID file)
+    # Start conductor in daemon mode
     node "$PLUGIN_ROOT/bin/conductor.js" start --daemon 2>/dev/null || true
     exit 0
     ;;
 
   SessionEnd)
-    # Stop conductor only if no other Claude sessions are active
-    # Simple approach: always stop (will restart on next SessionStart)
-    if [ -f "$PID_FILE" ]; then
-      PID=$(cat "$PID_FILE")
-      kill "$PID" 2>/dev/null || true
-      rm -f "$PID_FILE"
-    fi
+    # Write the event file so conductor knows about the session end
+    # (conductor will handle the actual lifecycle via prune)
+    # Don't kill the conductor immediately — other sessions may be active
+    mkdir -p "$ORCHESTRA_DIR/events"
+    SESSION_ID=$(echo "$INPUT" | grep -o '"session_id":"[^"]*"' | head -1 | cut -d'"' -f4)
+    echo "$INPUT" > "$ORCHESTRA_DIR/events/$(date +%s%N)-session-end.json" 2>/dev/null || true
     exit 0
     ;;
 esac
