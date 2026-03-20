@@ -8,16 +8,40 @@ import {
   unlinkSync,
   readdirSync,
   symlinkSync,
+  statSync,
 } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
 import { EventWatcher, EVENTS_DIR } from '../lib/event-watcher.js';
 import { SessionRegistry } from '../lib/registry.js';
 import { createEngine, loadConfig, CONFIG_PATH } from '../lib/engine.js';
 import { TRACKS_DIR } from '../lib/sample-engine.js';
+import {
+  bold,
+  box,
+  cyan,
+  dim,
+  formatDuration,
+  green,
+  magenta,
+  progressBar,
+  red,
+  yellow,
+} from '../lib/cli-format.js';
 
 const ORCHESTRA_DIR = join(process.env.HOME, '.claude-orchestra');
 const PID_FILE = join(ORCHESTRA_DIR, 'conductor.pid');
 const LOG_FILE = join(ORCHESTRA_DIR, 'conductor.log');
+const INSTRUMENT_EMOJIS = {
+  piano: '🎹',
+  cello: '🎻',
+  flute: '🪈',
+  marimba: '🎼',
+  clarinet: '🎷',
+  harp: '🪉',
+  bell: '🔔',
+  strings: '🎻',
+};
+const INSTRUMENT_COLORS = [cyan, magenta, green, yellow, red];
 
 // --- CLI ---
 const command = process.argv[2] || 'start';
@@ -63,7 +87,7 @@ function stop() {
     const pid = parseInt(readFileSync(PID_FILE, 'utf-8').trim());
     process.kill(pid, 'SIGTERM');
     unlinkSync(PID_FILE);
-    console.log(`Conductor stopped (PID ${pid}).`);
+    console.log(`${yellow('■ Conductor stopped')} ${dim(`(PID ${pid})`)}`);
   } catch (_e) {
     console.log('Conductor process not found, cleaning up PID file.');
     try {
@@ -77,41 +101,43 @@ function stop() {
 function showStatus() {
   const config = loadConfig();
   const registryPath = join(ORCHESTRA_DIR, 'registry.json');
-
-  console.log(`\n🎵 Claude Orchestra Status`);
-  console.log(`   Mode: ${config.mode}${config.track ? ` (track: ${config.track})` : ''}`);
-  console.log(`   Volume: ${config.volume}\n`);
-
-  if (!existsSync(registryPath)) {
-    console.log('   No active sessions.');
+  const headerLines = [
+    `Mode: ${cyan(formatMode(config))}`,
+    `Volume: ${magenta(formatVolume(config.volume))}`,
+  ];
+  const uptime = getUptime();
+  if (uptime) {
+    headerLines.push(
+      `Uptime: ${bold(formatDuration(uptime.seconds))} ${dim(`(PID ${uptime.pid})`)}`,
+    );
   } else {
-    try {
-      const data = JSON.parse(readFileSync(registryPath, 'utf-8'));
-      const sessions = data.sessions || {};
-      const count = Object.keys(sessions).length;
-      console.log(`   Active sessions: ${count}\n`);
-      if (count === 0) {
-        console.log('   No musicians on stage.');
-      } else {
-        for (const [id, info] of Object.entries(sessions)) {
-          const elapsed = Math.round((Date.now() - info.joinedAt) / 1000);
-          console.log(
-            `   🎻 ${info.instrumentId.padEnd(10)} │ session: ${id.slice(0, 8)}… │ ${elapsed}s ago`,
-          );
-        }
-      }
-    } catch (e) {
-      console.log('   Error reading registry:', e.message);
-    }
+    headerLines.push(`Status: ${red('Not running')}`);
   }
 
   console.log();
-  if (existsSync(PID_FILE)) {
-    const pid = readFileSync(PID_FILE, 'utf-8').trim();
-    console.log(`   Conductor PID: ${pid}`);
+  console.log(box(bold('Claude Orchestra Status'), headerLines));
+  console.log();
+
+  const sessionsResult = getSessionLines(registryPath);
+  if (sessionsResult.error) {
+    console.log(red(`Error reading registry: ${sessionsResult.error}`));
   } else {
-    console.log('   ⚠️  Conductor is not running.');
+    console.log(bold(`Active Sessions ${dim(`(${sessionsResult.count})`)}`));
+    for (const line of sessionsResult.lines) {
+      console.log(line);
+    }
   }
+
+  const sectionStatus = getSectionStatus(config);
+  if (sectionStatus) {
+    console.log();
+    console.log(bold('Current Section'));
+    console.log(sectionStatus.title);
+    console.log(
+      `${progressBar(sectionStatus.current, sectionStatus.total)} ${dim(sectionStatus.detail)}`,
+    );
+  }
+
   console.log();
 }
 
@@ -263,7 +289,7 @@ async function daemonize() {
     stdio: ['ignore', out, out],
   });
   child.unref();
-  console.log(`Conductor started in background (PID ${child.pid}).`);
+  console.log(`${green('✓ Conductor started')} ${dim(`(PID ${child.pid})`)}`);
   process.exit(0);
 }
 
@@ -294,10 +320,7 @@ async function start() {
   console.log(`  Mode: ${config.mode}${config.track ? ` (track: ${config.track})` : ''}`);
 
   // Load instruments
-  const instrumentsData = JSON.parse(
-    readFileSync(new URL('../data/instruments.json', import.meta.url), 'utf-8'),
-  );
-  const instruments = instrumentsData.instruments;
+  const instruments = loadInstruments();
 
   // Initialize engine
   const engine = createEngine(config);
@@ -411,4 +434,121 @@ function handleEvent(event, registry, engine) {
 function log(msg) {
   const ts = new Date().toISOString().slice(11, 19);
   console.log(`  [${ts}] ${msg}`);
+}
+
+function loadInstruments() {
+  const instrumentsData = JSON.parse(
+    readFileSync(new URL('../data/instruments.json', import.meta.url), 'utf-8'),
+  );
+  return instrumentsData.instruments;
+}
+
+function formatMode(config) {
+  if (config.track) {
+    return `${config.mode} / ${config.track}`;
+  }
+  return config.mode;
+}
+
+function formatVolume(volume) {
+  return `${Math.round((volume || 0) * 100)}%`;
+}
+
+function getUptime() {
+  if (!existsSync(PID_FILE)) return null;
+
+  try {
+    const pid = readFileSync(PID_FILE, 'utf-8').trim();
+    const startedAt = statSync(PID_FILE).mtimeMs;
+    return {
+      pid,
+      seconds: Math.max(0, (Date.now() - startedAt) / 1000),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getSessionLines(registryPath) {
+  if (!existsSync(registryPath)) {
+    return {
+      count: 0,
+      lines: [dim('No active sessions. Open Claude Code to hear the music!')],
+    };
+  }
+
+  try {
+    const data = JSON.parse(readFileSync(registryPath, 'utf-8'));
+    const sessions = Object.entries(data.sessions || {});
+    if (sessions.length === 0) {
+      return {
+        count: 0,
+        lines: [dim('No active sessions. Open Claude Code to hear the music!')],
+      };
+    }
+
+    const instruments = new Map(loadInstruments().map((instrument) => [instrument.id, instrument]));
+    const lines = sessions.map(([id, info], index) => {
+      const instrument = instruments.get(info.instrumentId);
+      const emoji = INSTRUMENT_EMOJIS[info.instrumentId] || '🎵';
+      const color = INSTRUMENT_COLORS[index % INSTRUMENT_COLORS.length];
+      const name = instrument?.name || info.instrumentId;
+      const elapsed = Math.round((Date.now() - (info.joinedAt || Date.now())) / 1000);
+      return `${emoji} ${color(name)} ${dim(`session ${id.slice(0, 8)}… • joined ${formatDuration(elapsed)} ago`)}`;
+    });
+
+    return { count: sessions.length, lines };
+  } catch (error) {
+    return { error: error.message, count: 0, lines: [] };
+  }
+}
+
+function getSectionStatus(config) {
+  if (!['sample', 'mixer'].includes(config.mode) || !config.track) {
+    return null;
+  }
+
+  const manifestPath = join(TRACKS_DIR, config.track, 'manifest.json');
+  if (!existsSync(manifestPath)) {
+    return null;
+  }
+
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+    const sections = manifest.sections || [];
+    if (sections.length === 0) return null;
+
+    const currentIndex = inferCurrentSectionIndex(sections);
+    const section = sections[currentIndex] || sections[0];
+    return {
+      current: currentIndex + 1,
+      total: sections.length,
+      title: `${cyan(section.name || section.id)} ${dim(`(${currentIndex + 1}/${sections.length})`)}`,
+      detail: `${manifest.name || config.track}`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function inferCurrentSectionIndex(sections) {
+  if (!existsSync(LOG_FILE)) return 0;
+
+  try {
+    const lines = readFileSync(LOG_FILE, 'utf-8').trim().split('\n');
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const match = lines[i].match(/\[section\] → (.+)$/);
+      if (!match) continue;
+
+      const name = match[1].trim();
+      const index = sections.findIndex((section) => section.name === name || section.id === name);
+      if (index >= 0) {
+        return index;
+      }
+    }
+  } catch {
+    return 0;
+  }
+
+  return 0;
 }
