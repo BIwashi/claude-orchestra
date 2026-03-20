@@ -71,7 +71,7 @@ npx claude-orchestra start --daemon
 
 ### Using the Bundled Demo Track
 
-Claude Orchestra includes a bundled demo track based on Offenbach's **Galop Infernal** from *Orpheus in the Underworld*.
+Claude Orchestra includes a bundled demo track based on Offenbach's **Galop Infernal** from _Orpheus in the Underworld_.
 
 ```bash
 npx claude-orchestra track list
@@ -100,7 +100,7 @@ npx claude-orchestra config set mode mixer
 
 `prepare-track.sh` separates stems with demucs when available, slices the arrangement into sections, and writes a ready-to-use `manifest.json` plus section audio files under `~/.claude-orchestra/tracks/<name>/`.
 
-If you want a reference layout, see [`data/tracks/demo/`](data/tracks/demo/). The bundled `orpheus-underworld` track is a complete example built from Offenbach's *Galop Infernal*.
+If you want a reference layout, see [`data/tracks/demo/`](data/tracks/demo/). The bundled `orpheus-underworld` track is a complete example built from Offenbach's _Galop Infernal_.
 
 ## CLI Reference
 
@@ -170,15 +170,15 @@ npx claude-orchestra-slice input.mp3 \
 
 After installing the plugin, the following skill commands are available:
 
-| Command                                            | Description                                          |
-| -------------------------------------------------- | ---------------------------------------------------- |
-| `/claude-orchestra:orchestra`                      | Check prerequisites, switch to mixer mode, and start |
-| `/claude-orchestra:orchestra status`               | Show orchestra status                                |
-| `/claude-orchestra:orchestra stop`                 | Stop the conductor                                   |
-| `/claude-orchestra:orchestra track <name>`         | Switch to a track                                    |
-| `/claude-orchestra:orchestra track prepare ...`    | Prepare a custom track from source audio             |
-| `/claude-orchestra:orchestra mixer`                | Switch to mixer mode                                 |
-| `/claude-orchestra:orchestra synth`                | Switch to synth mode                                 |
+| Command                                         | Description                                          |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| `/claude-orchestra:orchestra`                   | Check prerequisites, switch to mixer mode, and start |
+| `/claude-orchestra:orchestra status`            | Show orchestra status                                |
+| `/claude-orchestra:orchestra stop`              | Stop the conductor                                   |
+| `/claude-orchestra:orchestra track <name>`      | Switch to a track                                    |
+| `/claude-orchestra:orchestra track prepare ...` | Prepare a custom track from source audio             |
+| `/claude-orchestra:orchestra mixer`             | Switch to mixer mode                                 |
+| `/claude-orchestra:orchestra synth`             | Switch to synth mode                                 |
 
 ## Config
 

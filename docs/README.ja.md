@@ -71,7 +71,7 @@ npx claude-orchestra start --daemon
 
 ### 同梱デモトラックを使う
 
-Claude Orchestra には Offenbach の **Galop Infernal**（*Orpheus in the Underworld*）を元にしたデモトラックが同梱されています。
+Claude Orchestra には Offenbach の **Galop Infernal**（_Orpheus in the Underworld_）を元にしたデモトラックが同梱されています。
 
 ```bash
 npx claude-orchestra track list
@@ -100,7 +100,7 @@ npx claude-orchestra config set mode mixer
 
 `prepare-track.sh` は demucs が利用可能ならステム分離を行い、その後セクション分割と `manifest.json` の生成までまとめて実行し、`~/.claude-orchestra/tracks/<name>/` に配置します。
 
-レイアウトの参考としては [`data/tracks/demo/`](../data/tracks/demo/) を参照してください。同梱の `orpheus-underworld` トラックは、Offenbach の *Galop Infernal* を元にした完成例です。
+レイアウトの参考としては [`data/tracks/demo/`](../data/tracks/demo/) を参照してください。同梱の `orpheus-underworld` トラックは、Offenbach の _Galop Infernal_ を元にした完成例です。
 
 ## CLI リファレンス
 
@@ -170,15 +170,15 @@ npx claude-orchestra-slice input.mp3 \
 
 プラグインインストール後、以下のスキルコマンドが使えます。
 
-| コマンド                                         | 説明                                      |
-| ------------------------------------------------ | ----------------------------------------- |
-| `/claude-orchestra:orchestra`                    | 前提確認後、Mixer モードで起動            |
-| `/claude-orchestra:orchestra status`             | オーケストラの状態を表示                  |
-| `/claude-orchestra:orchestra stop`               | 指揮者を停止                              |
-| `/claude-orchestra:orchestra track <name>`       | トラックに切り替え                        |
-| `/claude-orchestra:orchestra track prepare ...`  | 音源からカスタムトラックを生成            |
-| `/claude-orchestra:orchestra mixer`              | Mixer モードに切り替え                    |
-| `/claude-orchestra:orchestra synth`              | Synth モードに切り替え                    |
+| コマンド                                        | 説明                           |
+| ----------------------------------------------- | ------------------------------ |
+| `/claude-orchestra:orchestra`                   | 前提確認後、Mixer モードで起動 |
+| `/claude-orchestra:orchestra status`            | オーケストラの状態を表示       |
+| `/claude-orchestra:orchestra stop`              | 指揮者を停止                   |
+| `/claude-orchestra:orchestra track <name>`      | トラックに切り替え             |
+| `/claude-orchestra:orchestra track prepare ...` | 音源からカスタムトラックを生成 |
+| `/claude-orchestra:orchestra mixer`             | Mixer モードに切り替え         |
+| `/claude-orchestra:orchestra synth`             | Synth モードに切り替え         |
 
 ## 設定
 

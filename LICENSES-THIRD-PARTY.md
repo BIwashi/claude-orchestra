@@ -5,7 +5,7 @@ This project is distributed under the MIT License. The items below cover notable
 ## Bundled Demo Track Source
 
 - **Offenbach "Galop Infernal" / Can-Can MIDI source**: Public domain.
-- Basis for public-domain status: Jacques Offenbach died in 1880, and *Orphée aux enfers* was first published in 1858.
+- Basis for public-domain status: Jacques Offenbach died in 1880, and _Orphée aux enfers_ was first published in 1858.
 
 ## SoundFont
 
