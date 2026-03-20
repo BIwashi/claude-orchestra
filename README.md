@@ -20,25 +20,26 @@ Claude Code Session C (Flute 🎶)  ──┘
 
 ## Modes
 
-### Synth Mode (default)
+### Mixer Mode (recommended)
+
+Pre-mixes stems with sox and plays the result with ffplay. This mode uses a global clock, so all active parts stay in perfect sync. Use this for the best track-based orchestra experience.
+
+### Synth Mode
 
 Generates tones via ffmpeg using harmonic synthesis. Each instrument has a unique timbre defined by its harmonic series. Zero external audio files needed.
 
 ### Sample Mode
 
-Plays pre-recorded audio organized into sections and parts:
-
-- **Session count = simultaneous parts** (1 session = strings only, 3 sessions = strings + woodwinds + brass)
-- **Tool events advance the playhead** through sections
-- **Idle = fermata** — the current section sustains or loops
+Plays pre-recorded stems directly. This is the legacy track mode and can drift out of sync across parts, so prefer mixer mode unless you specifically need the old behavior.
 
 ## Quick Start
 
 ### Prerequisites
 
-- macOS (uses `afplay` for audio playback)
-- Node.js ≥ 20
-- ffmpeg (`brew install ffmpeg`)
+- macOS
+- Node.js >= 20
+- ffmpeg and ffplay (`brew install ffmpeg`)
+- sox (`brew install sox`)
 
 ### Install as Claude Code Plugin
 
@@ -46,9 +47,10 @@ Plays pre-recorded audio organized into sections and parts:
 claude plugin install claude-orchestra
 ```
 
-Then start the conductor:
+Then set the recommended mode and start the conductor:
 
 ```bash
+npx claude-orchestra config set mode mixer
 npx claude-orchestra start --daemon
 ```
 
@@ -61,19 +63,44 @@ Or use the skill inside Claude Code:
 ### Install via npx (no install needed)
 
 ```bash
-# Start the conductor directly
+npx claude-orchestra config set mode mixer
 npx claude-orchestra start --daemon
 ```
 
 > **Note**: When using npx without the plugin, you need to manually configure hooks. The plugin install handles this automatically.
 
-### Using a Sample Track
+### Using the Bundled Demo Track
+
+Claude Orchestra includes a bundled demo track based on Offenbach's **Galop Infernal** from _Orpheus in the Underworld_.
 
 ```bash
 npx claude-orchestra track list
-npx claude-orchestra track use beethoven-9th
-npx claude-orchestra config set mode synth   # switch back
+npx claude-orchestra track use orpheus-underworld
+npx claude-orchestra config set mode mixer
 ```
+
+## Preparing Custom Tracks
+
+Use `./bin/prepare-track.sh` to turn a source file into a Claude Orchestra track.
+
+1. Get an audio source.
+   MIDI renderings, DAW exports, YouTube captures, public-domain recordings, and similar sources all work as long as you have a local audio file.
+2. Prepare the track.
+
+```bash
+./bin/prepare-track.sh source.mp3 --name my-track --timestamps 0:00,1:30,3:00
+```
+
+3. Switch to the prepared track in mixer mode.
+
+```bash
+npx claude-orchestra track use my-track
+npx claude-orchestra config set mode mixer
+```
+
+`prepare-track.sh` separates stems with demucs when available, slices the arrangement into sections, and writes a ready-to-use `manifest.json` plus section audio files under `~/.claude-orchestra/tracks/<name>/`.
+
+If you want a reference layout, see [`data/tracks/demo/`](data/tracks/demo/). The bundled `orpheus-underworld` track is a complete example built from Offenbach's _Galop Infernal_.
 
 ## CLI Reference
 
@@ -139,19 +166,19 @@ npx claude-orchestra-slice input.mp3 \
   --output ~/.claude-orchestra/tracks/my-track/
 ```
 
-See [`data/tracks/demo/`](data/tracks/demo/) for a template.
-
 ## `/orchestra` Skill
 
 After installing the plugin, the following skill commands are available:
 
-| Command                                    | Description                                 |
-| ------------------------------------------ | ------------------------------------------- |
-| `/claude-orchestra:orchestra`              | Check prerequisites and start the conductor |
-| `/claude-orchestra:orchestra status`       | Show orchestra status                       |
-| `/claude-orchestra:orchestra stop`         | Stop the conductor                          |
-| `/claude-orchestra:orchestra track <name>` | Switch to a sample track                    |
-| `/claude-orchestra:orchestra synth`        | Switch back to synth mode                   |
+| Command                                         | Description                                          |
+| ----------------------------------------------- | ---------------------------------------------------- |
+| `/claude-orchestra:orchestra`                   | Check prerequisites, switch to mixer mode, and start |
+| `/claude-orchestra:orchestra status`            | Show orchestra status                                |
+| `/claude-orchestra:orchestra stop`              | Stop the conductor                                   |
+| `/claude-orchestra:orchestra track <name>`      | Switch to a track                                    |
+| `/claude-orchestra:orchestra track prepare ...` | Prepare a custom track from source audio             |
+| `/claude-orchestra:orchestra mixer`             | Switch to mixer mode                                 |
+| `/claude-orchestra:orchestra synth`             | Switch to synth mode                                 |
 
 ## Config
 
@@ -159,7 +186,7 @@ Stored at `~/.claude-orchestra/config.json`:
 
 ```json
 {
-  "mode": "synth",
+  "mode": "mixer",
   "track": null,
   "volume": 0.5
 }
@@ -174,6 +201,7 @@ Stored at `~/.claude-orchestra/config.json`:
 bin/
   conductor.js      CLI + event loop (the "conductor")
   hook-musician.sh  Ultra-light hook (<5ms) — drops event JSON for the conductor
+  prepare-track.sh  demucs + ffmpeg helper for building custom tracks
   slice-track.sh    ffmpeg helper for splitting audio into sections
 
 lib/
