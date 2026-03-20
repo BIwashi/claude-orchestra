@@ -1,6 +1,6 @@
 {
   "name": "claude-orchestra",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Turn multiple Claude Code sessions into a live orchestra — background music reacts to your coding activity",
   "author": {
     "name": "BIwashi",
@@ -9,7 +9,7 @@
   "repository": "https://github.com/BIwashi/claude-orchestra",
   "homepage": "https://github.com/BIwashi/claude-orchestra",
   "license": "MIT",
-  "keywords": ["audio", "music", "orchestra", "multi-session"],
+  "keywords": ["audio", "music", "orchestra", "multi-session", "coding-music", "developer-tools"],
   "skills": "./skills/",
   "hooks": "./hooks/hooks.json"
 }

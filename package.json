@@ -1,7 +1,7 @@
 {
   "name": "claude-orchestra",
-  "version": "1.0.0",
-  "description": "Turn multiple Claude Code sessions into a live orchestra",
+  "version": "1.1.0",
+  "description": "Turn multiple Claude Code sessions into a live orchestra — background music reacts to your coding activity",
   "bin": {
     "claude-orchestra": "./bin/conductor.js"
   },
@@ -13,18 +13,27 @@
     "data/",
     "skills/",
     "hooks/",
-    "docs/"
+    "docs/",
+    "LICENSES-THIRD-PARTY.md"
   ],
   "keywords": [
     "claude-code",
     "claude-code-plugin",
     "audio",
     "music",
-    "orchestra"
+    "orchestra",
+    "coding-music",
+    "background-music",
+    "developer-tools",
+    "productivity"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/BIwashi/claude-orchestra.git"
+  },
+  "homepage": "https://github.com/BIwashi/claude-orchestra#readme",
+  "bugs": {
+    "url": "https://github.com/BIwashi/claude-orchestra/issues"
   },
   "scripts": {
     "test": "vitest run",
