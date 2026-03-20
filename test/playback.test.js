@@ -61,11 +61,7 @@ describe('playback', () => {
     const player = detectPlayer();
 
     expect(player.command).toBe('afplay');
-    expect(player.args('/tmp/test.wav', { volume: 0.75 })).toEqual([
-      '-v',
-      '0.75',
-      '/tmp/test.wav',
-    ]);
+    expect(player.args('/tmp/test.wav', { volume: 0.75 })).toEqual(['-v', '0.75', '/tmp/test.wav']);
   });
 
   it('falls back to paplay before aplay on Linux', async () => {
