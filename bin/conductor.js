@@ -20,7 +20,11 @@ import { EventWatcher, EVENTS_DIR } from '../lib/event-watcher.js';
 import { SessionRegistry } from '../lib/registry.js';
 import { createEngine, loadConfig, CONFIG_PATH } from '../lib/engine.js';
 import { TRACKS_DIR } from '../lib/sample-engine.js';
-import { checkSetupPrerequisites, formatMissingDependencies, hasCommand } from '../lib/prerequisites.js';
+import {
+  checkSetupPrerequisites,
+  formatMissingDependencies,
+  hasCommand,
+} from '../lib/prerequisites.js';
 
 const ORCHESTRA_DIR = join(process.env.HOME, '.claude-orchestra');
 const PID_FILE = join(ORCHESTRA_DIR, 'conductor.pid');
@@ -473,7 +477,9 @@ async function setup() {
   }
 
   if (prerequisites.missingMixer.length > 0) {
-    console.log('Mixer mode dependencies not found. Setup will fall back to synth mode until these are installed:');
+    console.log(
+      'Mixer mode dependencies not found. Setup will fall back to synth mode until these are installed:',
+    );
     for (const line of formatMissingDependencies(prerequisites.missingMixer)) {
       console.log(line);
     }
@@ -581,8 +587,7 @@ function prepareDemoTrack(prerequisites) {
       '6',
     ];
 
-    const demucsReady =
-      hasCommand('demucs') || hasCommand('uvx') || hasCommand('uv');
+    const demucsReady = hasCommand('demucs') || hasCommand('uvx') || hasCommand('uv');
 
     if (demucsReady) {
       const result = runStep('Separating stems and building demo sections', 'bash', prepareArgs, {
