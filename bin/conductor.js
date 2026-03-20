@@ -48,6 +48,11 @@ const INSTRUMENT_COLORS = [cyan, magenta, green, yellow, red];
 const command = process.argv[2] || 'start';
 const subCommand = process.argv[3];
 
+if (command === 'help' || command === '--help' || command === '-h') {
+  showHelp();
+  process.exit(0);
+}
+
 if (command === 'stop') {
   stop();
   process.exit(0);
@@ -469,6 +474,38 @@ function handleVolumeCommand() {
     console.error(e.message);
     process.exit(1);
   }
+}
+
+function showHelp() {
+  console.log(`
+${bold('🎵 Claude Orchestra')} — Turn Claude Code sessions into a live orchestra
+
+${cyan('Usage:')} claude-orchestra <command> [options]
+
+${cyan('Commands:')}
+  ${green('start')} [--daemon]          Start the conductor
+  ${green('stop')}                      Stop the conductor
+  ${green('status')}                    Show current state
+  ${green('volume')} [0.0-1.0]          Get or set volume (live, no restart)
+  ${green('config show')}               Show configuration
+  ${green('config set')} <key> <value>  Set config (mode, volume, track)
+  ${green('track list')}                List available tracks
+  ${green('track use')} <name>          Switch track
+  ${green('help')}                      Show this help
+
+${cyan('Modes:')}
+  ${green('mixer')}   ${dim('Pre-mix stems with sox + ffplay (recommended)')}
+  ${green('synth')}   ${dim('Generate tones via ffmpeg (no track needed)')}
+  ${green('sample')}  ${dim('Play pre-recorded stems (legacy)')}
+
+${cyan('Examples:')}
+  claude-orchestra start --daemon
+  claude-orchestra config set mode mixer
+  claude-orchestra volume 0.3
+  claude-orchestra track list
+
+${dim('Docs: https://github.com/BIwashi/claude-orchestra')}
+`);
 }
 
 function log(msg) {
