@@ -11,6 +11,7 @@ import {
   statSync,
 } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
+import { homedir } from 'node:os';
 import { EventWatcher, EVENTS_DIR } from '../lib/event-watcher.js';
 import { SessionRegistry } from '../lib/registry.js';
 import { createEngine, loadConfig, CONFIG_PATH } from '../lib/engine.js';
@@ -29,7 +30,7 @@ import {
   yellow,
 } from '../lib/cli-format.js';
 
-const ORCHESTRA_DIR = join(process.env.HOME, '.claude-orchestra');
+const ORCHESTRA_DIR = join(homedir(), '.claude-orchestra');
 const PID_FILE = join(ORCHESTRA_DIR, 'conductor.pid');
 const LOG_FILE = join(ORCHESTRA_DIR, 'conductor.log');
 const INSTRUMENT_EMOJIS = {

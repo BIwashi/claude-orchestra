@@ -23,3 +23,10 @@ MIXER_SPEC.md
 # Large generated audio (tracks are generated locally via setup)
 # Only MIDI files and manifests ship
 data/tracks/*/sections/
+
+# Large source audio files (users generate locally)
+data/tracks/orpheus-underworld/source.mp3
+data/tracks/orpheus-underworld/setup.sh
+
+# E2E test (requires audio hardware)
+test/e2e.sh
