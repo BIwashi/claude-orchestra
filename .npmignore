@@ -1,0 +1,25 @@
+# Development files
+test/
+.github/
+*.test.js
+eslint.config.js
+vitest.config.*
+.prettierrc*
+.eslintrc*
+
+# Build artifacts
+*.log
+*.pid
+coverage/
+.nyc_output/
+
+# Specs and temp files
+MIXER_SPEC.md
+*_SPEC.md
+
+# Git files
+.gitignore
+
+# Large generated audio (tracks are generated locally via setup)
+# Only MIDI files and manifests ship
+data/tracks/*/sections/
