@@ -6,50 +6,88 @@ import {
   mkdirSync,
   existsSync,
   unlinkSync,
+  copyFileSync,
+  mkdtempSync,
   readdirSync,
+  rmSync,
   symlinkSync,
 } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { EventWatcher, EVENTS_DIR } from '../lib/event-watcher.js';
 import { SessionRegistry } from '../lib/registry.js';
 import { createEngine, loadConfig, CONFIG_PATH } from '../lib/engine.js';
 import { TRACKS_DIR } from '../lib/sample-engine.js';
+import { checkSetupPrerequisites, formatMissingDependencies, hasCommand } from '../lib/prerequisites.js';
 
 const ORCHESTRA_DIR = join(process.env.HOME, '.claude-orchestra');
 const PID_FILE = join(ORCHESTRA_DIR, 'conductor.pid');
 const LOG_FILE = join(ORCHESTRA_DIR, 'conductor.log');
+const PREPARE_TRACK_SCRIPT = fileURLToPath(new URL('./prepare-track.sh', import.meta.url));
+const DEMO_MIDI_PATH = fileURLToPath(new URL('../data/tracks/demo/can-can.mid', import.meta.url));
+const DEMO_TRACK_NAME = 'demo';
+const DEMO_TIMESTAMPS = '0:00,0:20,0:40,1:00,1:20,1:40,2:00';
+const SOUNDFONT_CANDIDATES = [
+  process.env.CLAUDE_ORCHESTRA_SOUNDFONT,
+  process.env.SOUNDFONT,
+  join(process.env.HOME, 'Library/Audio/Sounds/Banks/FluidR3_GM.sf2'),
+  join(process.env.HOME, 'Library/Audio/Sounds/Banks/FluidR3_GM.sf3'),
+  '/opt/homebrew/share/soundfonts/FluidR3_GM.sf2',
+  '/opt/homebrew/share/soundfonts/FluidR3_GM.sf3',
+  '/opt/homebrew/share/sounds/sf2/FluidR3_GM.sf2',
+  '/usr/local/share/soundfonts/FluidR3_GM.sf2',
+  '/usr/local/share/soundfonts/FluidR3_GM.sf3',
+  '/usr/local/share/sounds/sf2/FluidR3_GM.sf2',
+  '/usr/share/sounds/sf2/FluidR3_GM.sf2',
+  '/usr/share/sounds/sf3/FluidR3_GM.sf3',
+].filter(Boolean);
 
 // --- CLI ---
 const command = process.argv[2] || 'start';
 const subCommand = process.argv[3];
 
-if (command === 'stop') {
-  stop();
-  process.exit(0);
-}
+await main();
 
-if (command === 'status') {
-  showStatus();
-  process.exit(0);
-}
-
-if (command === 'track') {
-  handleTrackCommand(subCommand);
-  process.exit(0);
-}
-
-if (command === 'config') {
-  handleConfigCommand(subCommand);
-  process.exit(0);
-}
-
-if (command === 'start') {
-  const daemon = process.argv.includes('--daemon');
-  if (daemon) {
-    daemonize();
-  } else {
-    start();
+async function main() {
+  if (command === 'stop') {
+    stop();
+    process.exit(0);
   }
+
+  if (command === 'status') {
+    showStatus();
+    process.exit(0);
+  }
+
+  if (command === 'track') {
+    handleTrackCommand(subCommand);
+    process.exit(0);
+  }
+
+  if (command === 'config') {
+    handleConfigCommand(subCommand);
+    process.exit(0);
+  }
+
+  if (command === 'setup') {
+    await setup();
+    process.exit(0);
+  }
+
+  if (command === 'start') {
+    const daemon = process.argv.includes('--daemon');
+    if (daemon) {
+      await daemonize();
+    } else {
+      await start();
+    }
+    return;
+  }
+
+  console.error(`Unknown command: ${command}`);
+  process.exit(1);
 }
 
 // --- Commands ---
@@ -148,7 +186,7 @@ function trackList() {
   }
 
   const entries = readdirSync(TRACKS_DIR, { withFileTypes: true });
-  const tracks = entries.filter((e) => e.isDirectory());
+  const tracks = entries.filter((e) => e.isDirectory() || e.isSymbolicLink());
 
   if (tracks.length === 0) {
     console.log('   No tracks installed.');
@@ -253,7 +291,7 @@ function handleConfigCommand(sub) {
   }
 }
 
-async function daemonize() {
+async function daemonize(options = {}) {
   const { spawn } = await import('node:child_process');
   const { openSync } = await import('node:fs');
   mkdirSync(ORCHESTRA_DIR, { recursive: true });
@@ -263,8 +301,13 @@ async function daemonize() {
     stdio: ['ignore', out, out],
   });
   child.unref();
-  console.log(`Conductor started in background (PID ${child.pid}).`);
-  process.exit(0);
+  if (!options.quiet) {
+    console.log(`Conductor started in background (PID ${child.pid}).`);
+  }
+  if (options.exitAfterSpawn !== false) {
+    process.exit(0);
+  }
+  return child.pid;
 }
 
 async function start() {
@@ -411,4 +454,240 @@ function handleEvent(event, registry, engine) {
 function log(msg) {
   const ts = new Date().toISOString().slice(11, 19);
   console.log(`  [${ts}] ${msg}`);
+}
+
+async function setup() {
+  mkdirSync(ORCHESTRA_DIR, { recursive: true });
+
+  console.log('\n🎵 Claude Orchestra setup\n');
+
+  const prerequisites = checkSetupPrerequisites();
+
+  if (prerequisites.missingRequired.length > 0) {
+    console.log('Missing required dependencies:');
+    for (const line of formatMissingDependencies(prerequisites.missingRequired)) {
+      console.log(line);
+    }
+    console.log();
+    process.exit(1);
+  }
+
+  if (prerequisites.missingMixer.length > 0) {
+    console.log('Mixer mode dependencies not found. Setup will fall back to synth mode until these are installed:');
+    for (const line of formatMissingDependencies(prerequisites.missingMixer)) {
+      console.log(line);
+    }
+    console.log();
+  }
+
+  let track = getFirstAvailableTrack();
+  if (!track) {
+    track = prepareDemoTrack(prerequisites);
+  }
+
+  const config = loadConfig();
+  config.mode = track && prerequisites.mixerReady ? 'mixer' : 'synth';
+  config.track = track ? track.name : null;
+  saveConfig(config);
+
+  const runningPid = getRunningPid();
+  if (runningPid) {
+    console.log(`Restarting existing conductor (PID ${runningPid})...`);
+    stop();
+    await waitForProcessExit(runningPid);
+  }
+
+  await daemonize({ exitAfterSpawn: false, quiet: true });
+
+  console.log('🎵 Claude Orchestra is running!');
+  console.log(`Mode: ${config.mode}${track ? ` (track: ${track.name})` : ''}`);
+  console.log('Open Claude Code sessions to hear the music.');
+  console.log('Run `claude-orchestra status` to check, `claude-orchestra stop` to stop.');
+  console.log();
+}
+
+function getFirstAvailableTrack() {
+  if (!existsSync(TRACKS_DIR)) {
+    return null;
+  }
+
+  const tracks = readdirSync(TRACKS_DIR, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() || entry.isSymbolicLink())
+    .map((entry) => entry.name)
+    .filter((name) => existsSync(join(TRACKS_DIR, name, 'manifest.json')))
+    .sort((a, b) => a.localeCompare(b));
+
+  if (tracks.length === 0) {
+    return null;
+  }
+
+  return { name: tracks[0], path: join(TRACKS_DIR, tracks[0]) };
+}
+
+function prepareDemoTrack(prerequisites) {
+  if (!prerequisites.fluidsynth.available) {
+    console.log('No sample tracks found, and fluidsynth is not installed.');
+    console.log('Install it to generate the bundled demo track: brew install fluid-synth');
+    console.log();
+    return null;
+  }
+
+  const soundfontPath = findSoundfont();
+  if (!soundfontPath) {
+    console.log('No sample tracks found, and no General MIDI soundfont was found.');
+    console.log('Install one and re-run setup, or set SOUNDFONT=/path/to/file.sf2.');
+    console.log('Common package locations checked:');
+    for (const candidate of SOUNDFONT_CANDIDATES) {
+      console.log(`- ${candidate}`);
+    }
+    console.log();
+    return null;
+  }
+
+  const demoTrackDir = join(TRACKS_DIR, DEMO_TRACK_NAME);
+  if (existsSync(join(demoTrackDir, 'manifest.json'))) {
+    return { name: DEMO_TRACK_NAME, path: demoTrackDir };
+  }
+
+  console.log('No tracks found. Generating the bundled demo track...');
+
+  const tempDir = mkdtempSync(join(tmpdir(), 'claude-orchestra-setup-'));
+  const midiPath = join(tempDir, 'can-can.mid');
+  const wavPath = join(tempDir, 'can-can.wav');
+
+  try {
+    copyFileSync(DEMO_MIDI_PATH, midiPath);
+
+    runStep('Rendering demo MIDI with fluidsynth', 'fluidsynth', [
+      '-ni',
+      soundfontPath,
+      midiPath,
+      '-F',
+      wavPath,
+      '-r',
+      '44100',
+    ]);
+
+    const prepareArgs = [
+      PREPARE_TRACK_SCRIPT,
+      wavPath,
+      '--name',
+      DEMO_TRACK_NAME,
+      '--output',
+      demoTrackDir,
+      '--timestamps',
+      DEMO_TIMESTAMPS,
+      '--events',
+      '6',
+    ];
+
+    const demucsReady =
+      hasCommand('demucs') || hasCommand('uvx') || hasCommand('uv');
+
+    if (demucsReady) {
+      const result = runStep('Separating stems and building demo sections', 'bash', prepareArgs, {
+        allowFailure: true,
+      });
+      if (result.status !== 0) {
+        console.log('demucs-based preparation failed. Retrying without stem separation...');
+        runStep('Building single-part demo track', 'bash', [...prepareArgs, '--skip-demucs']);
+      }
+    } else {
+      console.log('demucs was not found. Building a single-part demo track instead.');
+      runStep('Building single-part demo track', 'bash', [...prepareArgs, '--skip-demucs']);
+    }
+
+    customizeDemoManifest(demoTrackDir);
+    return { name: DEMO_TRACK_NAME, path: demoTrackDir };
+  } catch (error) {
+    console.log(`Demo track generation failed: ${error.message}`);
+    console.log('Setup will continue in synth mode.');
+    console.log();
+    return null;
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+function customizeDemoManifest(trackDir) {
+  const manifestPath = join(trackDir, 'manifest.json');
+  if (!existsSync(manifestPath)) {
+    return;
+  }
+
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+  manifest.name = 'Offenbach - Can-Can Demo';
+
+  const sectionNames = [
+    'Introduction',
+    'Theme A',
+    'Theme B',
+    'Development',
+    'Build',
+    'Recap',
+    'Finale',
+  ];
+
+  for (let i = 0; i < manifest.sections.length; i++) {
+    manifest.sections[i].name = sectionNames[i] || manifest.sections[i].name;
+    if (i === manifest.sections.length - 1) {
+      manifest.sections[i].loop = true;
+    }
+  }
+
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+}
+
+function runStep(label, commandName, args, options = {}) {
+  console.log(`${label}...`);
+  const result = spawnSync(commandName, args, { stdio: 'inherit' });
+  if (result.status !== 0 && !options.allowFailure) {
+    throw new Error(`${commandName} exited with status ${result.status ?? 'unknown'}`);
+  }
+  return result;
+}
+
+function findSoundfont() {
+  for (const candidate of SOUNDFONT_CANDIDATES) {
+    if (candidate && existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function saveConfig(config) {
+  mkdirSync(ORCHESTRA_DIR, { recursive: true });
+  writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+}
+
+function getRunningPid() {
+  if (!existsSync(PID_FILE)) {
+    return null;
+  }
+
+  try {
+    const pid = parseInt(readFileSync(PID_FILE, 'utf-8').trim());
+    process.kill(pid, 0);
+    return pid;
+  } catch {
+    return null;
+  }
+}
+
+async function waitForProcessExit(pid, timeoutMs = 5000) {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeoutMs) {
+    try {
+      process.kill(pid, 0);
+      await sleep(100);
+    } catch {
+      return;
+    }
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
