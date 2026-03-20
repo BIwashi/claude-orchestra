@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createEngine, loadConfig, DEFAULT_CONFIG } from '../lib/engine.js';
 import { SynthEngine } from '../lib/synth-engine.js';
 import { SampleEngine } from '../lib/sample-engine.js';
+import { MixerEngine } from '../lib/mixer-engine.js';
 import { BaseEngine } from '../lib/base-engine.js';
 
 describe('createEngine', () => {
@@ -14,6 +15,12 @@ describe('createEngine', () => {
   it('creates SampleEngine for sample mode', () => {
     const engine = createEngine({ mode: 'sample', track: 'test' });
     expect(engine).toBeInstanceOf(SampleEngine);
+    expect(engine).toBeInstanceOf(BaseEngine);
+  });
+
+  it('creates MixerEngine for mixer mode', () => {
+    const engine = createEngine({ mode: 'mixer', track: 'test' });
+    expect(engine).toBeInstanceOf(MixerEngine);
     expect(engine).toBeInstanceOf(BaseEngine);
   });
 
