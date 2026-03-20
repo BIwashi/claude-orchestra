@@ -2,7 +2,7 @@
 
 [日本語](docs/README.ja.md)
 
-Turn multiple Claude Code sessions into a live orchestra. Each session gets assigned an instrument, and every tool call becomes a musical note.
+Turn multiple Claude Code sessions into a live orchestra. Each session becomes an instrument, and every tool call drives the music.
 
 ## How It Works
 
@@ -15,31 +15,19 @@ Claude Code Session C (Flute 🎶)  ──┘
 - **Session join** → ascending arpeggio (welcome!)
 - **Tool use** → note mapped to the tool type (Read=tonic, Bash=dominant, Edit=mediant…)
 - **Error** → chromatic passing tone
-- **Idle** → ambient chord progression
+- **Idle** → ambient chord progression with crossfade
 - **Session leave** → descending arpeggio (farewell)
 
-## Modes
-
-### Mixer Mode (recommended)
-
-Pre-mixes stems with sox and plays the result with ffplay. This mode uses a global clock, so all active parts stay in perfect sync. Use this for the best track-based orchestra experience.
-
-### Synth Mode
-
-Generates tones via ffmpeg using harmonic synthesis. Each instrument has a unique timbre defined by its harmonic series. Zero external audio files needed.
-
-### Sample Mode
-
-Plays pre-recorded stems directly. This is the legacy track mode and can drift out of sync across parts, so prefer mixer mode unless you specifically need the old behavior.
+The conductor auto-starts when a Claude Code session begins and auto-stops when the last session ends. No manual setup needed.
 
 ## Quick Start
 
 ### Prerequisites
 
-- macOS
 - Node.js >= 20
-- ffmpeg and ffplay (`brew install ffmpeg`)
-- sox (`brew install sox`)
+- macOS or Linux
+- ffmpeg/ffplay (`brew install ffmpeg` / `apt install ffmpeg`)
+- sox (`brew install sox` / `apt install sox`)
 
 ### Install as Claude Code Plugin
 
@@ -47,79 +35,84 @@ Plays pre-recorded stems directly. This is the legacy track mode and can drift o
 claude plugin install claude-orchestra
 ```
 
-Then set the recommended mode and start the conductor:
+That's it! The plugin hooks auto-start the conductor in synth mode. For the full experience with pre-mixed tracks, say:
+
+```
+/orchestra setup
+```
+
+Or configure manually:
 
 ```bash
 npx claude-orchestra config set mode mixer
 npx claude-orchestra start --daemon
 ```
 
-Or use the skill inside Claude Code:
+## Modes
+
+| Mode       | Description                                                                   | Dependencies             |
+| ---------- | ----------------------------------------------------------------------------- | ------------------------ |
+| **mixer**  | Pre-mixes stems with sox, plays with ffplay. Global clock sync. Best quality. | sox, ffplay, track audio |
+| **synth**  | Generates tones via ffmpeg harmonic synthesis. Works out of the box.          | ffmpeg only              |
+| **sample** | Plays pre-recorded stems directly. Legacy mode, can drift.                    | afplay/paplay/aplay      |
+
+## CLI Reference
 
 ```
-/claude-orchestra:orchestra setup
+claude-orchestra help                Show all commands
+claude-orchestra start [--daemon]    Start the conductor
+claude-orchestra stop                Stop the conductor
+claude-orchestra status              Show active sessions, mode, and track
+
+claude-orchestra volume [0.0-1.0]    Get or set volume (live, no restart)
+
+claude-orchestra track list          List available tracks
+claude-orchestra track use <name>    Switch to a track
+claude-orchestra track add <dir>     Register a track directory
+
+claude-orchestra config show         Show current config
+claude-orchestra config set <k> <v>  Update a config value (mode, volume, track)
 ```
 
-### Install via npx (no install needed)
+## Volume Control
+
+Adjust volume at runtime — changes apply immediately without restarting:
 
 ```bash
-npx claude-orchestra config set mode mixer
-npx claude-orchestra start --daemon
+npx claude-orchestra volume 0.3    # Quiet background
+npx claude-orchestra volume 0.7    # Louder
 ```
 
-> **Note**: When using npx without the plugin, you need to manually configure hooks. The plugin install handles this automatically.
+Volume uses file-based signaling (`~/.claude-orchestra/volume-signal`). The conductor polls every 2 seconds and applies the change smoothly.
 
-### Using the Bundled Demo Track
+## Demo Tracks
 
-Claude Orchestra includes a bundled demo track based on Offenbach's **Galop Infernal** from _Orpheus in the Underworld_.
+### Bundled
+
+- **Ode to Joy** — Beethoven's Symphony No. 9 (MIDI, 8KB, public domain)
+
+### Available via Setup
+
+- **Orpheus in the Underworld** — Offenbach's Galop Infernal (requires fluidsynth + demucs)
 
 ```bash
 npx claude-orchestra track list
-npx claude-orchestra track use orpheus-underworld
-npx claude-orchestra config set mode mixer
+npx claude-orchestra track use ode-to-joy
 ```
 
 ## Preparing Custom Tracks
 
-Use `./bin/prepare-track.sh` to turn a source file into a Claude Orchestra track.
-
-1. Get an audio source.
-   MIDI renderings, DAW exports, YouTube captures, public-domain recordings, and similar sources all work as long as you have a local audio file.
-2. Prepare the track.
+Turn any audio file into a Claude Orchestra track:
 
 ```bash
 ./bin/prepare-track.sh source.mp3 --name my-track --timestamps 0:00,1:30,3:00
 ```
 
-3. Switch to the prepared track in mixer mode.
+This separates stems with demucs (when available), slices into sections, and writes `manifest.json` + section audio under `~/.claude-orchestra/tracks/<name>/`.
 
-```bash
-npx claude-orchestra track use my-track
-npx claude-orchestra config set mode mixer
-```
+See [`data/tracks/demo/`](data/tracks/demo/) for the manifest format reference.
 
-`prepare-track.sh` separates stems with demucs when available, slices the arrangement into sections, and writes a ready-to-use `manifest.json` plus section audio files under `~/.claude-orchestra/tracks/<name>/`.
-
-If you want a reference layout, see [`data/tracks/demo/`](data/tracks/demo/). The bundled `orpheus-underworld` track is a complete example built from Offenbach's _Galop Infernal_.
-
-## CLI Reference
-
-```
-claude-orchestra start [--daemon]    Start the conductor
-claude-orchestra stop                Stop the conductor
-claude-orchestra status              Show active sessions and config
-
-claude-orchestra track list          List available tracks
-claude-orchestra track use <name>    Switch to a sample track
-claude-orchestra track add <dir>     Register a track directory (symlink)
-
-claude-orchestra config show         Show current config
-claude-orchestra config set <k> <v>  Update a config value
-```
-
-## Creating Custom Tracks
-
-### Directory Structure
+### Track Directory Structure
 
 ```
 ~/.claude-orchestra/tracks/my-track/
@@ -134,7 +127,7 @@ claude-orchestra config set <k> <v>  Update a config value
       ...
 ```
 
-### manifest.json
+### manifest.json Example
 
 ```json
 {
@@ -156,29 +149,51 @@ claude-orchestra config set <k> <v>  Update a config value
 }
 ```
 
-### Slice Helper
-
-Split a single audio file into sections with ffmpeg:
-
-```bash
-npx claude-orchestra-slice input.mp3 \
-  --timestamps 0:00,1:30,3:00,4:30 \
-  --output ~/.claude-orchestra/tracks/my-track/
-```
-
 ## `/orchestra` Skill
 
-After installing the plugin, the following skill commands are available:
+After installing the plugin, natural language commands work:
 
-| Command                                         | Description                                          |
-| ----------------------------------------------- | ---------------------------------------------------- |
-| `/claude-orchestra:orchestra`                   | Check prerequisites, switch to mixer mode, and start |
-| `/claude-orchestra:orchestra status`            | Show orchestra status                                |
-| `/claude-orchestra:orchestra stop`              | Stop the conductor                                   |
-| `/claude-orchestra:orchestra track <name>`      | Switch to a track                                    |
-| `/claude-orchestra:orchestra track prepare ...` | Prepare a custom track from source audio             |
-| `/claude-orchestra:orchestra mixer`             | Switch to mixer mode                                 |
-| `/claude-orchestra:orchestra synth`             | Switch to synth mode                                 |
+| Say this                               | What happens       |
+| -------------------------------------- | ------------------ |
+| "start music" / "orchestra" / "bgm on" | Setup and start    |
+| "stop music" / "quiet"                 | Stop the conductor |
+| "play ode to joy" / "change track"     | Switch track       |
+| "louder" / "quieter" / "volume 30%"    | Adjust volume      |
+| "what's playing" / "status"            | Show current state |
+| "switch to synth" / "mixer mode"       | Change engine mode |
+
+## Architecture
+
+```
+hooks/                       Plugin hook definitions
+  hooks.json                 SessionStart → auto-start, PostToolUse → event, SessionEnd → cleanup
+
+bin/
+  conductor.js               CLI entrypoint + event loop (the "conductor")
+  hook-lifecycle.sh           Session lifecycle hook (<5ms, auto-creates config)
+  hook-musician.sh            Tool event hook (<5ms, atomic JSON write)
+  prepare-track.sh            demucs + ffmpeg pipeline for custom tracks
+
+lib/
+  engine.js                  Factory: config → MixerEngine | SynthEngine | SampleEngine
+  mixer-engine.js            sox pre-mix + ffplay synchronized playback with global clock
+  synth-engine.js            Harmonic synthesis via ffmpeg WAV generation
+  sample-engine.js           Direct stem playback (legacy)
+  base-engine.js             Shared interface: init, setVolume, applyVolume, handleToolEvent, etc.
+  playback.js                Cross-platform player detection (ffplay → afplay → paplay → aplay)
+  volume-signal.js           File-based runtime volume control
+  cli-format.js              ANSI colors, box drawing, progress bars (zero deps)
+  audio-player.js            Per-instrument voice channels with rate limiting
+  music-theory.js            Scales, progressions, tool→note mappings
+  activity-mapper.js         Tool events → musical parameters
+  event-watcher.js           Filesystem watcher for event JSON files
+  registry.js                Session → instrument assignment with persistence
+  tone-cache.js              Tone generation and disk caching
+
+skills/orchestra/            /orchestra skill for natural language control
+data/instruments.json        Instrument definitions (harmonics, attack, decay, color)
+data/tracks/                 Bundled MIDI + track manifests
+```
 
 ## Config
 
@@ -187,45 +202,19 @@ Stored at `~/.claude-orchestra/config.json`:
 ```json
 {
   "mode": "mixer",
-  "track": null,
+  "track": "ode-to-joy",
   "volume": 0.5
 }
 ```
 
-## Architecture
+## Cross-Platform Support
 
-```
-.claude-plugin/
-  plugin.json       Plugin manifest
-
-bin/
-  conductor.js      CLI + event loop (the "conductor")
-  hook-musician.sh  Ultra-light hook (<5ms) — drops event JSON for the conductor
-  prepare-track.sh  demucs + ffmpeg helper for building custom tracks
-  slice-track.sh    ffmpeg helper for splitting audio into sections
-
-lib/
-  engine.js         Factory: createEngine(config) → SynthEngine | SampleEngine
-  synth-engine.js   Harmonic synthesis via ffmpeg-generated WAV files
-  sample-engine.js  Pre-recorded audio playback with section/part management
-  audio-player.js   Per-instrument voice channels with rate limiting (afplay)
-  music-theory.js   Scales, progressions, tool→note mappings
-  activity-mapper.js Tool events → musical parameters (note, volume, duration)
-  event-watcher.js  Filesystem watcher for event JSON files
-  registry.js       Session → instrument assignment with persistence
-  tone-cache.js     ffmpeg tone generation and caching
-
-skills/
-  orchestra/        /orchestra skill for setup and control
-
-hooks/
-  hooks.json        Plugin hook definitions (SessionStart, PostToolUse, SessionEnd)
-
-data/
-  instruments.json  Instrument definitions (harmonics, attack, decay)
-  tracks/demo/      Template track with manifest format docs
-```
+| OS      | Status           | Player                |
+| ------- | ---------------- | --------------------- |
+| macOS   | ✅ Full          | ffplay, afplay        |
+| Linux   | ✅ Full          | ffplay, paplay, aplay |
+| Windows | ❌ Not supported | —                     |
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE)
