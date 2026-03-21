@@ -20,7 +20,11 @@
     "LICENSES-THIRD-PARTY.md",
     "LICENSE",
     "data/tracks/polovtsian-dances/source.mid",
-    "data/tracks/polovtsian-dances/README.md"
+    "data/tracks/polovtsian-dances/README.md",
+    "data/tracks/new-world/source.mid",
+    "data/tracks/new-world/README.md",
+    "data/tracks/morning-mood/source.mid",
+    "data/tracks/morning-mood/README.md"
   ],
   "keywords": [
     "claude-code",
