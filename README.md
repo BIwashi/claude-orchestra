@@ -1,5 +1,9 @@
 # 🎵 Claude Orchestra
 
+[![CI](https://github.com/BIwashi/claude-orchestra/actions/workflows/ci.yml/badge.svg)](https://github.com/BIwashi/claude-orchestra/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+
 [日本語](docs/README.ja.md)
 
 Turn multiple Claude Code sessions into a live orchestra. Each session becomes an instrument, and every tool call drives the music.
