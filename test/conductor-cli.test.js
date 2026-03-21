@@ -52,6 +52,14 @@ describe('conductor-cli helpers', () => {
     expect(cli.formatMode({ mode: 'synth', track: null })).toBe('synth');
   });
 
+  it('showHelp includes the debug command', () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    cli.showHelp();
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('debug'));
+  });
+
   it('formatVolume formats expected percentages', () => {
     expect(cli.formatVolume(0)).toBe('0%');
     expect(cli.formatVolume(0.5)).toBe('50%');

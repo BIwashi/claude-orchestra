@@ -50,3 +50,8 @@ if (command === 'start') {
     await start();
   }
 }
+
+if (command === 'debug') {
+  process.env.CLAUDE_ORCHESTRA_DEBUG = '1';
+  await start();
+}
