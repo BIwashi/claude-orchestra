@@ -8,6 +8,10 @@
 
 Turn multiple Claude Code sessions into a live orchestra. Each session becomes an instrument, and every tool call drives the music.
 
+<p align="center">
+  <img src="docs/demo.svg" alt="Claude Orchestra Demo" width="600">
+</p>
+
 ## How It Works
 
 ```
@@ -95,6 +99,7 @@ Volume uses file-based signaling (`~/.claude-orchestra/volume-signal`). The cond
 ### Bundled
 
 - **Ode to Joy** — Beethoven's Symphony No. 9 (MIDI, 8KB, public domain)
+- **Polovtsian Dances** — Borodin's Prince Igor (MIDI, 16KB, public domain)
 
 ### Available via Setup
 
