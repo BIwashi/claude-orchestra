@@ -88,12 +88,26 @@ List available tracks:
 npx claude-orchestra track list
 ```
 
+### Bundled Tracks
+
+When the user asks for a specific track, match their request to the track name:
+
+| User says                                               | Track name           | Composer         |
+| ------------------------------------------------------- | -------------------- | ---------------- |
+| "ode to joy" / "beethoven" / "9th symphony"             | `ode-to-joy`         | Beethoven (1824) |
+| "new world" / "dvorak" / "新世界"                       | `new-world`          | Dvořák (1893)    |
+| "morning mood" / "peer gynt" / "grieg" / "朝"           | `morning-mood`       | Grieg (1875)     |
+| "polovtsian" / "borodin" / "prince igor" / "ダッタン人" | `polovtsian-dances`  | Borodin (1890)   |
+| "can-can" / "orpheus" / "offenbach" / "天国と地獄"      | `orpheus-underworld` | Offenbach (1858) |
+
 Switch to a track:
 
 ```bash
 npx claude-orchestra track use <name>
 npx claude-orchestra stop && npx claude-orchestra start --daemon
 ```
+
+**Tip:** Morning Mood is great for calm coding sessions. New World and Polovtsian Dances are energetic. Orpheus (Can-Can) is fun and chaotic.
 
 ## Mode Switching
 
