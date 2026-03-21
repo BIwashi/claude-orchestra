@@ -221,11 +221,12 @@ function trackUse(name) {
   }
 
   const config = loadConfig();
-  config.mode = 'sample';
+  config.mode = 'mixer';
   config.track = name;
   mkdirSync(ORCHESTRA_DIR, { recursive: true });
   writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
-  console.log(`Switched to sample mode with track: ${name}`);
+  console.log(`Switched to mixer mode with track: ${name}`);
+  console.log(`Selected mode: ${config.mode}`);
   console.log('Restart the conductor for changes to take effect.');
 }
 

@@ -32,6 +32,7 @@ The conductor auto-starts when a Claude Code session begins and auto-stops when 
 ### Install as Claude Code Plugin
 
 ```bash
+claude plugin marketplace add BIwashi/claude-orchestra
 claude plugin install claude-orchestra
 ```
 

@@ -139,4 +139,42 @@ describe('playback', () => {
 
     expect(detectPlayer()).toBeNull();
   });
+
+  it('caches player detection across repeated playback calls', async () => {
+    mockPlatform('darwin');
+    const spawn = vi.fn(() => ({ on: vi.fn() }));
+    const spawnSync = vi.fn((command, args) => ({
+      status: args[0] === 'ffplay' ? 0 : 1,
+    }));
+
+    vi.doMock('node:child_process', () => ({
+      spawn,
+      spawnSync,
+    }));
+
+    const { playFile } = await import('../lib/playback.js');
+
+    playFile('/tmp/first.wav');
+    playFile('/tmp/second.wav', { volume: 0.5 });
+
+    expect(spawnSync).toHaveBeenCalledTimes(1);
+    expect(spawn).toHaveBeenNthCalledWith(
+      1,
+      'ffplay',
+      ['-nodisp', '-autoexit', '-loglevel', 'quiet', '/tmp/first.wav'],
+      {
+        stdio: 'ignore',
+        detached: false,
+      },
+    );
+    expect(spawn).toHaveBeenNthCalledWith(
+      2,
+      'ffplay',
+      ['-nodisp', '-autoexit', '-loglevel', 'quiet', '-af', 'volume=0.5', '/tmp/second.wav'],
+      {
+        stdio: 'ignore',
+        detached: false,
+      },
+    );
+  });
 });

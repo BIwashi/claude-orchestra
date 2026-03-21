@@ -1,7 +1,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MixerEngine } from '../lib/mixer-engine.js';
 
 function createFakeProcess() {
@@ -200,5 +200,25 @@ describe('MixerEngine', () => {
       join(rootDir, 'claude-orchestra-mix-intro.wav'),
     ]);
     expect(playbackCalls[1].args[1]).toBe('1.75');
+  });
+
+  it('uses applyVolume when mixing so runtime volume changes affect new mixes', () => {
+    const applyVolume = vi.spyOn(engine, 'applyVolume');
+
+    engine.setVolume(0.25);
+    engine.mixParts(engine.manifest.sections[0], 2);
+
+    expect(applyVolume).toHaveBeenNthCalledWith(1, 0.5);
+    expect(applyVolume).toHaveBeenNthCalledWith(2, 0.6);
+    expect(mixCalls[0].args).toEqual([
+      '-m',
+      '-v',
+      '0.125',
+      join(trackDir, 'sections/intro/part-0.wav'),
+      '-v',
+      '0.15',
+      join(trackDir, 'sections/intro/part-1.wav'),
+      join(rootDir, 'claude-orchestra-mix-intro.wav'),
+    ]);
   });
 });
