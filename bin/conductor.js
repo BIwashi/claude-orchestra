@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs';
 import {
   handleConfigCommand,
   handleTrackCommand,
@@ -14,6 +15,14 @@ const subCommand = process.argv[3];
 
 if (command === 'help' || command === '--help' || command === '-h') {
   showHelp();
+  process.exit(0);
+}
+
+if (command === 'version' || command === '--version' || command === '-v') {
+  const packageJson = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf-8'),
+  );
+  console.log(packageJson.version);
   process.exit(0);
 }
 
