@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -220,5 +220,28 @@ describe('MixerEngine', () => {
       join(trackDir, 'sections/intro/part-1.wav'),
       join(rootDir, 'claude-orchestra-mix-intro.wav'),
     ]);
+  });
+
+  it('removes prior mix files before creating a new mix', () => {
+    const staleMix = join(rootDir, 'claude-orchestra-mix-stale.wav');
+    writeFileSync(staleMix, 'old');
+
+    engine.mixParts(engine.manifest.sections[0], 1);
+
+    expect(existsSync(staleMix)).toBe(false);
+  });
+
+  it('removes generated mix files when stopping all playback', () => {
+    engine.handleSessionJoin({ id: 'strings' }, 1);
+    const mixPath = join(rootDir, 'claude-orchestra-mix-intro.wav');
+    writeFileSync(mixPath, 'current');
+    writeFileSync(join(rootDir, 'claude-orchestra-mix-extra.wav'), 'old');
+
+    expect(existsSync(mixPath)).toBe(true);
+
+    engine.stopAll();
+
+    expect(existsSync(mixPath)).toBe(false);
+    expect(existsSync(join(rootDir, 'claude-orchestra-mix-extra.wav'))).toBe(false);
   });
 });
