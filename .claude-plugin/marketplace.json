@@ -1,16 +1,20 @@
 {
   "name": "claude-orchestra",
   "owner": {
-    "name": "BIwashi"
+    "name": "BIwashi",
+    "url": "https://github.com/BIwashi"
   },
   "metadata": {
-    "description": "Turn multiple Claude Code sessions into a live orchestra"
+    "description": "Turn multiple Claude Code sessions into a live orchestra",
+    "version": "1.2.0"
   },
   "plugins": [
     {
       "name": "claude-orchestra",
+      "version": "1.2.0",
       "description": "Turn multiple Claude Code sessions into a live orchestra — background music reacts to your coding activity",
       "category": "productivity",
+      "tags": ["audio", "music", "developer-experience", "fun"],
       "source": {
         "source": "url",
         "url": "https://github.com/BIwashi/claude-orchestra.git"

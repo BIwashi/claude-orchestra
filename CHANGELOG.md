@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.2.0] - 2026-03-22
+
+### Added
+
+- **Status system**: conductor writes `status.json`, hook outputs status line to Claude's context
+- **Commands**: `/claude-orchestra:status` and `/claude-orchestra:play [track]` for in-Claude control
+- **SubagentStart/SubagentStop hooks**: music reacts to subagent lifecycle
+- **Setup skill**: `/claude-orchestra:setup` guides dependency installation and track rendering
+- **Orchestra output style**: musical, expressive response formatting
+- **3 new tracks**: Polovtsian Dances (Borodin), From the New World (Dvořák), Morning Mood (Grieg)
+- **Animated demo**: SVG terminal recording in README
+- **Track selection table** in SKILL.md with Japanese name support
+
+### Changed
+
+- Default track to orpheus-underworld (Can-Can) when stems are prepared
+- Hook validates conductor PID before writing events
+- Marketplace metadata includes version and tags
+- Plugin manifest declares commands and output-styles directories
+
+### Fixed
+
+- Hook-musician now checks `kill -0` on PID (not just file existence)
+- Empty stdin handled gracefully in hook
+
 ## [1.1.0] - 2026-03-21
 
 ### Added
