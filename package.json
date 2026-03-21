@@ -18,7 +18,9 @@
     "hooks/",
     "docs/",
     "LICENSES-THIRD-PARTY.md",
-    "LICENSE"
+    "LICENSE",
+    "data/tracks/polovtsian-dances/source.mid",
+    "data/tracks/polovtsian-dances/README.md"
   ],
   "keywords": [
     "claude-code",
