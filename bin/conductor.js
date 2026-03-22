@@ -9,6 +9,7 @@ import {
   showStatus,
 } from '../lib/conductor-cli.js';
 import { daemonize, start, stop } from '../lib/conductor-daemon.js';
+import { setup } from '../lib/setup.js';
 
 const command = process.argv[2] || 'start';
 const subCommand = process.argv[3];
@@ -48,6 +49,11 @@ if (command === 'config') {
 
 if (command === 'volume') {
   handleVolumeCommand();
+  process.exit(0);
+}
+
+if (command === 'setup') {
+  await setup();
   process.exit(0);
 }
 
