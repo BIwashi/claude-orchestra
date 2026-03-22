@@ -90,19 +90,21 @@ if (manifest.sections.length > 0) {
   manifest.sections[manifest.sections.length - 1].loop = true;
 }
 
-// Relabel stems for orchestral context
-const orchestraLabels = {
-  'drums': 'Percussion (Timpani & Cymbals)',
-  'bass': 'Low Strings (Cello & Bass)',
-  'other': 'Orchestral Ensemble',
-  'vocals': 'High Winds & Brass',
+// Relabel stems for orchestral context and set priority
+// Higher priority = selected first when fewer sessions are active
+const orchestraConfig = {
+  'drums': { label: 'Percussion (Timpani & Cymbals)', priority: 1 },
+  'bass': { label: 'Low Strings (Cello & Bass)', priority: 2 },
+  'other': { label: 'Orchestral Ensemble', priority: 4 },
+  'vocals': { label: 'High Winds & Brass', priority: 3 },
 };
 
 for (const section of manifest.sections) {
   for (const part of section.parts) {
-    for (const [stem, label] of Object.entries(orchestraLabels)) {
+    for (const [stem, config] of Object.entries(orchestraConfig)) {
       if (part.label === stem || part.label.toLowerCase() === stem) {
-        part.label = label;
+        part.label = config.label;
+        part.priority = config.priority;
       }
     }
   }
