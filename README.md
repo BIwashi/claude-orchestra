@@ -9,7 +9,7 @@
 Turn multiple Claude Code sessions into a live orchestra. Each session becomes an instrument, and every tool call drives the music.
 
 <p align="center">
-  <img src="docs/demo.svg" alt="Claude Orchestra Demo" width="600">
+  <img src="docs/demo.gif" alt="Claude Orchestra Demo" width="700">
 </p>
 
 ## How It Works
