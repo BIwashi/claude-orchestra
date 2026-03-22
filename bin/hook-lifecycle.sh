@@ -21,16 +21,17 @@ is_running() {
 
 ensure_config() {
   # Create default config if none exists
-  # Uses mixer mode with orpheus-underworld (Can-Can) as default track
-  # Falls back to synth if track stems are not prepared
+  # Checks for prepared tracks in priority order, falls back to synth
   if [ ! -f "$CONFIG_FILE" ]; then
     mkdir -p "$ORCHESTRA_DIR"
-    TRACK_DIR="$ORCHESTRA_DIR/tracks/orpheus-underworld"
-    if [ -d "$TRACK_DIR" ] && [ -f "$TRACK_DIR/manifest.json" ]; then
-      echo '{"mode":"mixer","volume":0.3,"track":"orpheus-underworld"}' > "$CONFIG_FILE"
-    else
-      echo '{"mode":"synth","volume":0.3}' > "$CONFIG_FILE"
-    fi
+    for track in ode-to-joy new-world orpheus-underworld; do
+      TRACK_DIR="$ORCHESTRA_DIR/tracks/$track"
+      if [ -d "$TRACK_DIR" ] && [ -f "$TRACK_DIR/manifest.json" ]; then
+        echo "{\"mode\":\"mixer\",\"volume\":0.3,\"track\":\"$track\"}" > "$CONFIG_FILE"
+        return
+      fi
+    done
+    echo '{"mode":"synth","volume":0.3}' > "$CONFIG_FILE"
   fi
 }
 
