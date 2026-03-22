@@ -22,11 +22,14 @@ Claude Code Session C (Flute 🎶)  ──┘
 
 - **Session join** → ascending arpeggio (welcome!)
 - **Tool use** → note mapped to the tool type (Read=tonic, Bash=dominant, Edit=mediant…)
+- **Subagent spawn** → new instrument joins the ensemble
 - **Error** → chromatic passing tone
 - **Idle** → ambient chord progression with crossfade
 - **Session leave** → descending arpeggio (farewell)
 
 The conductor auto-starts when a Claude Code session begins and auto-stops when the last session ends. No manual setup needed.
+
+Claude sees the current track and section status after every tool call — try `/claude-orchestra:status` for details.
 
 ## Quick Start
 
@@ -96,14 +99,17 @@ Volume uses file-based signaling (`~/.claude-orchestra/volume-signal`). The cond
 
 ## Demo Tracks
 
-### Bundled
+### Bundled (MIDI → render locally)
 
-- **Ode to Joy** — Beethoven's Symphony No. 9 (MIDI, 8KB, public domain)
-- **Polovtsian Dances** — Borodin's Prince Igor (MIDI, 16KB, public domain)
+| Track              | Composer         | Duration | Mood                       |
+| ------------------ | ---------------- | -------- | -------------------------- |
+| Ode to Joy         | Beethoven (1824) | ~2 min   | 🎉 Bright, uplifting       |
+| Orpheus Underworld | Offenbach (1858) | ~2:40    | 💃 Fast, chaotic (Can-Can) |
+| Morning Mood       | Grieg (1875)     | ~3 min   | 🌅 Calm, focused           |
+| Polovtsian Dances  | Borodin (1890)   | ~2:30    | 🔥 Powerful, exotic        |
+| From the New World | Dvořák (1893)    | ~1:40    | 🌍 Epic, energetic         |
 
-### Available via Setup
-
-- **Orpheus in the Underworld** — Offenbach's Galop Infernal (requires fluidsynth + demucs)
+All public domain. MIDI files are bundled; render stems with `/claude-orchestra:setup`.
 
 ```bash
 npx claude-orchestra track list
@@ -159,30 +165,53 @@ See [`data/tracks/demo/`](data/tracks/demo/) for the manifest format reference.
 }
 ```
 
-## `/orchestra` Skill
+## Plugin Commands & Skills
 
-After installing the plugin, natural language commands work:
+### Slash Commands
+
+| Command                          | Description                                 |
+| -------------------------------- | ------------------------------------------- |
+| `/claude-orchestra:status`       | Show current track, section, sessions       |
+| `/claude-orchestra:play [track]` | Switch track from within Claude             |
+| `/claude-orchestra:setup`        | Guided dependency install & track rendering |
+
+### Natural Language (via `/orchestra` Skill)
 
 | Say this                               | What happens       |
 | -------------------------------------- | ------------------ |
 | "start music" / "orchestra" / "bgm on" | Setup and start    |
 | "stop music" / "quiet"                 | Stop the conductor |
-| "play ode to joy" / "change track"     | Switch track       |
+| "play ode to joy" / "新世界にして"     | Switch track       |
 | "louder" / "quieter" / "volume 30%"    | Adjust volume      |
 | "what's playing" / "status"            | Show current state |
 | "switch to synth" / "mixer mode"       | Change engine mode |
+
+### Output Style
+
+Enable the Orchestra output style for musical, expressive responses:
+
+```
+/config → Output style → Orchestra
+```
 
 ## Architecture
 
 ```
 hooks/                       Plugin hook definitions
-  hooks.json                 SessionStart → auto-start, PostToolUse → event, SessionEnd → cleanup
+  hooks.json                 SessionStart, PostToolUse, SubagentStart/Stop, SessionEnd
 
 bin/
   conductor.js               CLI entrypoint + event loop (the "conductor")
   hook-lifecycle.sh           Session lifecycle hook (<5ms, auto-creates config)
-  hook-musician.sh            Tool event hook (<5ms, atomic JSON write)
+  hook-musician.sh            Tool event hook (<5ms, atomic write + status output)
   prepare-track.sh            demucs + ffmpeg pipeline for custom tracks
+
+commands/                    Slash commands for in-Claude interaction
+  status.md                  /claude-orchestra:status
+  play.md                    /claude-orchestra:play [track]
+
+output-styles/               Custom output styles
+  orchestra.md               Musical, expressive response formatting
 
 lib/
   engine.js                  Factory: config → MixerEngine | SynthEngine | SampleEngine
