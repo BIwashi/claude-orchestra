@@ -189,7 +189,6 @@ function parseChunk(buf, offset) {
 }
 
 function parseTrackEvents(trackData) {
-  const events = [];
   let offset = 0;
   let runningStatus = 0;
   let channel = null;
@@ -203,8 +202,6 @@ function parseTrackEvents(trackData) {
     if (offset >= trackData.length) break;
 
     let statusByte = trackData[offset];
-    let dataStart = offset;
-
     // Running status
     if (statusByte < 0x80) {
       statusByte = runningStatus;
