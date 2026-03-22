@@ -231,6 +231,43 @@ describe('MixerEngine', () => {
     expect(existsSync(staleMix)).toBe(false);
   });
 
+  it('selects parts by priority when priority field is present', () => {
+    // Add priority to intro parts: part-2 (highest), part-0 (middle), part-1 (lowest)
+    engine.manifest.sections[0].parts[0].priority = 2;
+    engine.manifest.sections[0].parts[1].priority = 1;
+    engine.manifest.sections[0].parts[2].priority = 3;
+
+    engine.handleSessionJoin({ id: 'strings' }, 1);
+
+    // Should pick part-2 (priority 3, highest)
+    expect(mixCalls).toHaveLength(1);
+    expect(mixCalls[0].args).toContain(join(trackDir, 'sections/intro/part-2.wav'));
+    expect(mixCalls[0].args).not.toContain(join(trackDir, 'sections/intro/part-0.wav'));
+    expect(mixCalls[0].args).not.toContain(join(trackDir, 'sections/intro/part-1.wav'));
+  });
+
+  it('selects top 2 parts by priority with 2 sessions', () => {
+    engine.manifest.sections[0].parts[0].priority = 2;
+    engine.manifest.sections[0].parts[1].priority = 1;
+    engine.manifest.sections[0].parts[2].priority = 3;
+
+    engine.handleSessionJoin({ id: 'strings' }, 2);
+
+    // Should pick part-2 (priority 3) and part-0 (priority 2)
+    expect(mixCalls).toHaveLength(1);
+    expect(mixCalls[0].args).toContain(join(trackDir, 'sections/intro/part-2.wav'));
+    expect(mixCalls[0].args).toContain(join(trackDir, 'sections/intro/part-0.wav'));
+    expect(mixCalls[0].args).not.toContain(join(trackDir, 'sections/intro/part-1.wav'));
+  });
+
+  it('falls back to index order when no priority field is set', () => {
+    // No priority fields - should use original slice behavior
+    engine.handleSessionJoin({ id: 'strings' }, 1);
+
+    expect(mixCalls).toHaveLength(1);
+    expect(mixCalls[0].args).toContain(join(trackDir, 'sections/intro/part-0.wav'));
+  });
+
   it('removes generated mix files when stopping all playback', () => {
     engine.handleSessionJoin({ id: 'strings' }, 1);
     const mixPath = join(rootDir, 'claude-orchestra-mix-intro.wav');
