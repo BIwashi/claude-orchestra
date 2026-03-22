@@ -9,18 +9,36 @@ You are helping the user control Claude Orchestra, a plugin that turns Claude Co
 
 ## Quick Reference
 
-| User says                              | What to do                          |
-| -------------------------------------- | ----------------------------------- |
-| "start music" / "orchestra" / "bgm on" | Run setup (auto-detects everything) |
-| "stop music" / "quiet" / "bgm off"     | Stop the conductor                  |
-| "change track" / "play X"              | Switch track                        |
-| "louder" / "quieter" / "volume X"      | Adjust volume                       |
-| "what's playing" / "status"            | Show status                         |
-| "switch to synth/mixer"                | Change mode                         |
+| User says                              | What to do                       |
+| -------------------------------------- | -------------------------------- |
+| "start music" / "orchestra" / "bgm on" | Show status, confirm, then start |
+| "stop music" / "quiet" / "bgm off"     | Stop the conductor               |
+| "change track" / "play X"              | Switch track                     |
+| "louder" / "quieter" / "volume X"      | Adjust volume                    |
+| "what's playing" / "status"            | Show status                      |
+| "switch to synth/mixer"                | Change mode                      |
 
 ## Setup (default action)
 
-When the user just wants music playing, run setup. It handles everything automatically:
+**IMPORTANT: Always confirm with the user before starting audio playback.**
+
+When the user asks about the orchestra or music, first check the current state:
+
+```bash
+npx claude-orchestra status 2>&1
+```
+
+Then explain what will happen and ask for confirmation:
+
+> "Orchestra を起動します。バックグラウンドで音楽が流れ始めますが、よろしいですか？
+>
+> - 🎵 トラック: [current or default track]
+> - 🔊 ボリューム: [current volume]%
+> - 🎛️ モード: [mixer/synth]
+>
+> 起動しますか？（トラックやボリュームの変更も可能です）"
+
+**Only after the user confirms**, run setup:
 
 ```bash
 npx claude-orchestra setup
