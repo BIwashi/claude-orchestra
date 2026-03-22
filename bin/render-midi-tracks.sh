@@ -228,37 +228,53 @@ done
 # --- Generate manifest.json ---
 [ -z "$TRACK_NAME" ] && TRACK_NAME=$(basename "$INPUT" .mid)
 
-node -e "
-const fs = require('fs');
-const path = require('path');
+# Read track name from config if available (handles special characters safely)
+if [ -n "$CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
+  CONFIG_NAME=$(CF="$CONFIG_FILE" node -e 'const c=JSON.parse(require("fs").readFileSync(process.env.CF,"utf-8"));if(c.name)console.log(c.name)' 2>/dev/null) || true
+  [ -n "$CONFIG_NAME" ] && TRACK_NAME="$CONFIG_NAME"
+fi
 
-const groups = JSON.parse('$GROUPS_JSON');
-const times = '$TIMESTAMPS'.split(',');
-const sectionNames = JSON.parse('$(node -e "
-  const names = [];
-  if ('$CONFIG_FILE' && fs.existsSync('$CONFIG_FILE')) {
-    const c = JSON.parse(fs.readFileSync('$CONFIG_FILE','utf-8'));
-    if (c.sectionNames) names.push(...c.sectionNames);
-  }
-  console.log(JSON.stringify(names));
-" 2>/dev/null || echo "[]")');
+# Use environment variables to avoid shell quoting issues in node -e
+MANIFEST_TRACK_NAME="$TRACK_NAME" \
+MANIFEST_GROUPS_JSON="$GROUPS_JSON" \
+MANIFEST_TIMESTAMPS="$TIMESTAMPS" \
+MANIFEST_EVENTS="$EVENTS_PER_SECTION" \
+MANIFEST_TEMP_DIR="$TEMP_DIR" \
+MANIFEST_OUTPUT_DIR="$OUTPUT_DIR" \
+MANIFEST_CONFIG_FILE="$CONFIG_FILE" \
+node -e '
+const fs = require("fs");
+const path = require("path");
 
-// Count actual groups with rendered WAVs
+const groups = JSON.parse(process.env.MANIFEST_GROUPS_JSON);
+const times = process.env.MANIFEST_TIMESTAMPS.split(",");
+const tempDir = process.env.MANIFEST_TEMP_DIR;
+const outputDir = process.env.MANIFEST_OUTPUT_DIR;
+const configFile = process.env.MANIFEST_CONFIG_FILE;
+
+let sectionNames = [];
+if (configFile && fs.existsSync(configFile)) {
+  try {
+    const c = JSON.parse(fs.readFileSync(configFile, "utf-8"));
+    if (c.sectionNames) sectionNames = c.sectionNames;
+  } catch {}
+}
+
 const activeGroups = groups.filter((_, i) => {
-  return fs.existsSync(path.join('$TEMP_DIR', 'groups', 'group-' + String(i).padStart(2,'0') + '.wav'));
+  return fs.existsSync(path.join(tempDir, "groups", "group-" + String(i).padStart(2,"0") + ".wav"));
 });
 
 const sections = times.map((_, i) => {
-  const sectionId = String(i).padStart(2,'0') + '-section-' + i;
+  const sectionId = String(i).padStart(2,"0") + "-section-" + i;
   const isLast = i === times.length - 1;
 
   let partIdx = 0;
   const parts = [];
   for (let g = 0; g < groups.length; g++) {
-    const groupWav = path.join('$TEMP_DIR', 'groups', 'group-' + String(g).padStart(2,'0') + '.wav');
+    const groupWav = path.join(tempDir, "groups", "group-" + String(g).padStart(2,"0") + ".wav");
     if (!fs.existsSync(groupWav)) continue;
     parts.push({
-      file: 'sections/' + sectionId + '/part-' + partIdx + '.wav',
+      file: "sections/" + sectionId + "/part-" + partIdx + ".wav",
       label: groups[g].label,
       volume: groups[g].volume || 0.7,
       priority: groups[g].priority || 2,
@@ -268,23 +284,23 @@ const sections = times.map((_, i) => {
 
   return {
     id: sectionId,
-    name: sectionNames[i] || 'Section ' + (i + 1),
+    name: sectionNames[i] || "Section " + (i + 1),
     loop: isLast,
     parts,
   };
 });
 
 const manifest = {
-  name: '$TRACK_NAME',
-  eventsPerSection: $EVENTS_PER_SECTION,
+  name: process.env.MANIFEST_TRACK_NAME,
+  eventsPerSection: parseInt(process.env.MANIFEST_EVENTS) || 8,
   maxParts: activeGroups.length,
   sections,
-  idle: { strategy: 'sustain', fadeMs: 2000 },
+  idle: { strategy: "sustain", fadeMs: 2000 },
 };
 
-fs.writeFileSync('$OUTPUT_DIR/manifest.json', JSON.stringify(manifest, null, 2) + '\n');
-console.log('   Manifest written: ' + sections.length + ' sections, ' + activeGroups.length + ' parts');
-"
+fs.writeFileSync(path.join(outputDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+console.log("   Manifest written: " + sections.length + " sections, " + activeGroups.length + " parts");
+'
 
 echo ""
 echo "   ✅ Track rendered from MIDI!"
