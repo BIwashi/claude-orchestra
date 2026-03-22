@@ -9,63 +9,81 @@ You are helping the user control Claude Orchestra, a plugin that turns Claude Co
 
 ## Quick Reference
 
-| User says                              | What to do                       |
-| -------------------------------------- | -------------------------------- |
-| "start music" / "orchestra" / "bgm on" | Show status, confirm, then start |
-| "stop music" / "quiet" / "bgm off"     | Stop the conductor               |
-| "change track" / "play X"              | Switch track                     |
-| "louder" / "quieter" / "volume X"      | Adjust volume                    |
-| "what's playing" / "status"            | Show status                      |
-| "switch to synth/mixer"                | Change mode                      |
+| User says                              | What to do                             |
+| -------------------------------------- | -------------------------------------- |
+| "start music" / "orchestra" / "bgm on" | Check deps → explain → confirm → start |
+| "stop music" / "quiet" / "bgm off"     | Stop the conductor                     |
+| "change track" / "play X"              | Switch track                           |
+| "louder" / "quieter" / "volume X"      | Adjust volume                          |
+| "what's playing" / "status"            | Show status                            |
+| "switch to synth/mixer"                | Change mode                            |
 
 ## Setup (default action)
 
-**IMPORTANT: Always confirm with the user before starting audio playback.**
-
-When the user asks about the orchestra or music, first check the current state:
+When the user wants to start the orchestra, **first check what's already installed**:
 
 ```bash
-npx claude-orchestra status 2>&1
+echo "=== Dependency Check ==="
+command -v ffmpeg && echo "ffmpeg: ✅" || echo "ffmpeg: ❌"
+command -v ffplay && echo "ffplay: ✅" || echo "ffplay: ❌"
+command -v sox && echo "sox: ✅" || echo "sox: ❌"
+command -v fluidsynth && echo "fluidsynth: ✅" || echo "fluidsynth: ❌"
+python3 -c "import demucs" 2>/dev/null && echo "demucs: ✅" || echo "demucs: ❌"
+echo "=== Tracks ==="
+ls ~/.claude-orchestra/tracks/*/manifest.json 2>/dev/null | wc -l | xargs echo "Prepared tracks:"
 ```
 
-Then explain what will happen and ask for confirmation:
+### If dependencies are missing
 
-> "Orchestra を起動します。バックグラウンドで音楽が流れ始めますが、よろしいですか？
->
-> - 🎵 トラック: [current or default track]
-> - 🔊 ボリューム: [current volume]%
-> - 🎛️ モード: [mixer/synth]
->
-> 起動しますか？（トラックやボリュームの変更も可能です）"
+**IMPORTANT: Before installing anything, explain what each tool does and why it's needed. Get explicit confirmation.**
 
-**Only after the user confirms**, run setup:
+Present the dependency list to the user:
+
+> いくつかツールのインストールが必要です:
+>
+> **必須（音を鳴らすのに最低限必要）:**
+> | ツール | 用途 | インストール |
+> |--------|------|-------------|
+> | `ffmpeg` / `ffplay` | 音声の再生・生成エンジン | `brew install ffmpeg` |
+> | `sox` | 複数パートのリアルタイムミックス | `brew install sox` |
+>
+> **任意（MIDIから音源を生成する場合に必要。なくてもsynthモードで動作可能）:**
+> | ツール | 用途 | インストール |
+> |--------|------|-------------|
+> | `fluidsynth` | MIDIファイル → WAV変換 | `brew install fluid-synth` |
+> | `demucs` | AIによるパート分離（ベース/ドラム等） | `pip3 install demucs` |
+>
+> どうしますか？
+>
+> 1. **必須のみ** インストール（synth + mixerモード）
+> 2. **全部** インストール（MIDI楽曲も使える、フル体験）
+> 3. **何もインストールしない**（synthモードのみ、追加ツール不要で動く）
+
+**Only install what the user agrees to:**
+
+```bash
+# Option 1: Essential only
+brew install ffmpeg sox
+
+# Option 2: Full
+brew install ffmpeg sox fluid-synth
+pip3 install demucs "numpy<2"
+
+# Option 3: No install needed
+npx claude-orchestra config set mode synth
+```
+
+### If all dependencies are present
+
+Skip straight to starting:
 
 ```bash
 npx claude-orchestra setup
 ```
 
-This single command:
-
-- Checks all prerequisites (ffmpeg, sox, ffplay, fluidsynth)
-- Generates a demo track if none exist (MIDI → fluidsynth → demucs → sections)
-- Configures the best available mode (mixer if possible, falls back to synth)
-- Starts the conductor daemon
-
-**If `setup` is not available** (older version), do it manually:
+### After installation
 
 ```bash
-# Check deps
-command -v ffmpeg && command -v sox && command -v ffplay && echo "All good"
-
-# Configure and start
-npx claude-orchestra config set mode mixer
-npx claude-orchestra start --daemon
-```
-
-If mixer deps are missing, fall back to synth mode (works out of the box, no external audio files needed):
-
-```bash
-npx claude-orchestra config set mode synth
 npx claude-orchestra start --daemon
 ```
 

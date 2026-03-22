@@ -18,10 +18,25 @@ ls ~/.claude-orchestra/tracks/*/manifest.json 2>/dev/null | wc -l | xargs echo "
 
 ## Install Dependencies
 
+**Before installing, explain what each tool does and get user confirmation.**
+
+| Tool                | Purpose                                                        | Required?                            |
+| ------------------- | -------------------------------------------------------------- | ------------------------------------ |
+| `ffmpeg` / `ffplay` | Audio playback and generation engine                           | **Yes** — core audio player          |
+| `sox`               | Real-time multi-stem mixing (Sound eXchange)                   | **Yes** — needed for mixer mode      |
+| `fluidsynth`        | MIDI-to-WAV synthesizer — converts bundled MIDI files to audio | Optional — only for rendering tracks |
+| `demucs`            | AI stem separation — splits audio into bass/drums/vocals/other | Optional — only for rendering tracks |
+
+Ask the user which to install (essential only / all / none), then proceed.
+
 ### macOS (Homebrew)
 
 ```bash
-brew install ffmpeg sox fluid-synth
+# Essential (required for mixer mode)
+brew install ffmpeg sox
+
+# Optional (for rendering MIDI tracks to stems)
+brew install fluid-synth
 pip3 install demucs "numpy<2"
 ```
 
