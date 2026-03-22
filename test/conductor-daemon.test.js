@@ -128,18 +128,18 @@ describe('conductor-daemon handleEvent', () => {
     expect(engine.handleToolEvent).toHaveBeenCalledTimes(0);
   });
 
-  it('cleans up stale event files when startup backlog is too large', () => {
+  it('cleans up all stale event files on startup', () => {
     const eventsDir = join(tempDir, '.claude-orchestra', 'events');
     mkdirSync(eventsDir, { recursive: true });
-    for (let i = 0; i < 101; i++) {
+    for (let i = 0; i < 5; i++) {
       writeFileSync(join(eventsDir, `event-${i}.json`), '{}');
     }
 
     const removed = daemon.cleanupStaleEvents();
 
-    expect(removed).toBe(101);
+    expect(removed).toBe(5);
     expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining('Cleaned up 101 stale event files on startup.'),
+      expect.stringContaining('Cleaned up 5 stale event files on startup.'),
     );
   });
 
