@@ -76,15 +76,21 @@ if ! command -v ffmpeg &>/dev/null; then
 fi
 
 # Resolve demucs command (direct > uvx > uv tool run)
-DEMUCS_CMD=""
-if [ "$SKIP_DEMUCS" = false ]; then
+# Uses a function instead of a string variable to avoid shell quoting issues
+# with the --with 'numpy<2' argument (single quotes inside double quotes become
+# literal characters, and unquoted < triggers redirection).
+run_demucs() {
   if command -v demucs &>/dev/null; then
-    DEMUCS_CMD="demucs"
+    demucs "$@"
   elif command -v uvx &>/dev/null; then
-    DEMUCS_CMD="uvx --with 'numpy<2' demucs"
+    uvx --with "numpy<2" demucs "$@"
   elif command -v uv &>/dev/null; then
-    DEMUCS_CMD="uv tool run --with 'numpy<2' demucs"
-  else
+    uv tool run --with "numpy<2" demucs "$@"
+  fi
+}
+
+if [ "$SKIP_DEMUCS" = false ]; then
+  if ! command -v demucs &>/dev/null && ! command -v uvx &>/dev/null && ! command -v uv &>/dev/null; then
     echo "Error: demucs or uv is required"
     echo "       Install uv (recommended): curl -LsSf https://astral.sh/uv/install.sh | sh"
     echo "       Or: pip install demucs"
@@ -112,7 +118,7 @@ STEMS_DIR="$TEMP_DIR/stems"
 
 if [ "$SKIP_DEMUCS" = false ]; then
   echo "   [1/3] Separating stems with demucs ($DEMUCS_MODEL)..."
-  $DEMUCS_CMD -n "$DEMUCS_MODEL" -o "$TEMP_DIR/demucs_out" "$INPUT" 2>&1 | tail -3
+  run_demucs -n "$DEMUCS_MODEL" -o "$TEMP_DIR/demucs_out" "$INPUT" 2>&1 | tail -3
 
   # demucs outputs to: <out>/<model>/<track_name>/
   DEMUCS_OUT="$TEMP_DIR/demucs_out/$DEMUCS_MODEL/$INPUT_NAME"
