@@ -9,83 +9,94 @@ You are helping the user control Claude Orchestra, a plugin that turns Claude Co
 
 ## Quick Reference
 
-| User says                              | What to do                             |
-| -------------------------------------- | -------------------------------------- |
-| "start music" / "orchestra" / "bgm on" | Check deps → explain → confirm → start |
-| "stop music" / "quiet" / "bgm off"     | Stop the conductor                     |
-| "change track" / "play X"              | Switch track                           |
-| "louder" / "quieter" / "volume X"      | Adjust volume                          |
-| "what's playing" / "status"            | Show status                            |
-| "switch to synth/mixer"                | Change mode                            |
+| User says                              | What to do                               |
+| -------------------------------------- | ---------------------------------------- |
+| "start music" / "orchestra" / "bgm on" | Run **Start with Dependency Check** flow |
+| "stop music" / "quiet" / "bgm off"     | Stop the conductor                       |
+| "change track" / "play X"              | Switch track                             |
+| "louder" / "quieter" / "volume X"      | Adjust volume                            |
+| "what's playing" / "status"            | Show status                              |
+| "switch to synth/mixer"                | Change mode                              |
 
-## Setup (default action)
+## Start with Dependency Check
 
-When the user wants to start the orchestra, **first check what's already installed**:
+**Always run this flow when starting the orchestra.**
+
+### Step 1: Check dependencies and status
+
+```bash
+npx claude-orchestra status 2>&1
+```
 
 ```bash
 echo "=== Dependency Check ==="
-command -v ffmpeg && echo "ffmpeg: ✅" || echo "ffmpeg: ❌"
-command -v ffplay && echo "ffplay: ✅" || echo "ffplay: ❌"
-command -v sox && echo "sox: ✅" || echo "sox: ❌"
-command -v fluidsynth && echo "fluidsynth: ✅" || echo "fluidsynth: ❌"
-python3 -c "import demucs" 2>/dev/null && echo "demucs: ✅" || echo "demucs: ❌"
-echo "=== Tracks ==="
-ls ~/.claude-orchestra/tracks/*/manifest.json 2>/dev/null | wc -l | xargs echo "Prepared tracks:"
+for cmd in ffmpeg ffplay sox fluidsynth; do
+  if command -v "$cmd" >/dev/null 2>&1; then
+    echo "✓ $cmd: $(command -v $cmd)"
+  else
+    echo "✗ $cmd: NOT FOUND"
+  fi
+done
+TRACK_COUNT=$(ls ~/.claude-orchestra/tracks/*/manifest.json 2>/dev/null | wc -l | tr -d ' ')
+echo "=== Prepared Tracks: $TRACK_COUNT ==="
 ```
 
-### If dependencies are missing
+### Step 2: Report findings and propose a plan
 
-**IMPORTANT: Before installing anything, explain what each tool does and why it's needed. Get explicit confirmation.**
+Based on the results, **tell the user what you found and ask for confirmation before installing anything.**
 
-Present the dependency list to the user:
+**Rules:**
 
-> いくつかツールのインストールが必要です:
->
-> **必須（音を鳴らすのに最低限必要）:**
-> | ツール | 用途 | インストール |
-> |--------|------|-------------|
-> | `ffmpeg` / `ffplay` | 音声の再生・生成エンジン | `brew install ffmpeg` |
-> | `sox` | 複数パートのリアルタイムミックス | `brew install sox` |
->
-> **任意（MIDIから音源を生成する場合に必要。なくてもsynthモードで動作可能）:**
-> | ツール | 用途 | インストール |
-> |--------|------|-------------|
-> | `fluidsynth` | MIDIファイル → WAV変換 | `brew install fluid-synth` |
-> | `demucs` | AIによるパート分離（ベース/ドラム等） | `pip3 install demucs` |
->
-> どうしますか？
->
-> 1. **必須のみ** インストール（synth + mixerモード）
-> 2. **全部** インストール（MIDI楽曲も使える、フル体験）
-> 3. **何もインストールしない**（synthモードのみ、追加ツール不要で動く）
+- **Never install anything without asking the user first**
+- Always explain what each dependency is for
+- Always offer synth mode as a zero-dependency alternative (requires only ffmpeg)
+- On Linux, suggest `apt install` instead of `brew install`
 
-**Only install what the user agrees to:**
+**Example messages:**
 
-```bash
-# Option 1: Essential only
-brew install ffmpeg sox
+- All deps present + tracks prepared:
 
-# Option 2: Full
-brew install ffmpeg sox fluid-synth
-pip3 install demucs "numpy<2"
+  > "全ての依存関係がインストール済みで、トラックも準備されています。orchestra を起動します。"
 
-# Option 3: No install needed
-npx claude-orchestra config set mode synth
-```
+- Missing sox/fluidsynth:
+  > "以下のインストールが必要です:\n- sox (音声ミキシング)\n- fluidsynth (MIDI レンダリング)\n\n`brew install sox fluid-synth` でインストールしてよいですか？\nまたは synth モード (依存なし) で開始することもできます。"
 
-### If all dependencies are present
+### Step 3: Install and setup (after user approval)
 
-Skip straight to starting:
+If all required deps (ffmpeg, sox) are installed, run the automated setup:
 
 ```bash
 npx claude-orchestra setup
 ```
 
-### After installation
+This single command:
+
+- Checks all prerequisites
+- Acquires a soundfont for MIDI rendering (if fluidsynth is available)
+- Renders the default track (Ode to Joy) from bundled MIDI
+- Configures the best available mode (mixer if possible, synth fallback)
+- Starts the conductor daemon
+
+If deps need installing first:
 
 ```bash
-npx claude-orchestra start --daemon
+# macOS
+brew install ffmpeg sox fluid-synth
+
+# Linux
+sudo apt install -y ffmpeg sox fluidsynth
+
+# Then run setup
+npx claude-orchestra setup
 ```
+
+### Step 4: Verify
+
+```bash
+npx claude-orchestra status
+```
+
+Confirm to the user that music is playing and which mode/track is active.
 
 ## Status
 
@@ -107,13 +118,6 @@ Change volume while music is playing (no restart needed):
 npx claude-orchestra volume 0.5    # 50% volume
 npx claude-orchestra volume 0.2    # Quiet background
 npx claude-orchestra volume 0.8    # Louder
-```
-
-If the `volume` command is not available:
-
-```bash
-npx claude-orchestra config set volume 0.3
-npx claude-orchestra stop && npx claude-orchestra start --daemon
 ```
 
 ## Track Switching
@@ -143,11 +147,11 @@ npx claude-orchestra track use <name>
 npx claude-orchestra stop && npx claude-orchestra start --daemon
 ```
 
-**Tip:** Morning Mood is great for calm coding sessions. New World and Polovtsian Dances are energetic. Orpheus (Can-Can) is fun and chaotic.
+**Tip:** Morning Mood is great for calm coding sessions. Ode to Joy is the default and works out of the box with MIDI rendering.
 
 ## Mode Switching
 
-- **mixer** (recommended): Pre-mixed stems with perfect sync. Needs sox + ffplay + a track.
+- **mixer** (recommended): MIDI-rendered instrument parts with perfect separation. Needs sox + ffplay + fluidsynth.
 - **synth**: Generates tones in real-time. No track or extra deps needed. Good fallback.
 
 ```bash
@@ -160,6 +164,9 @@ npx claude-orchestra stop && npx claude-orchestra start --daemon
 If the user wants to use their own music:
 
 ```bash
+# From a MIDI file (recommended — perfect instrument separation):
+bash ./bin/render-midi-tracks.sh source.mid output-dir --name my-track --timestamps 0:00,1:00,2:00
+
 # From an audio file (needs demucs for stem separation):
 ./bin/prepare-track.sh source.mp3 --name my-track --timestamps 0:00,1:00,2:00,3:00
 
@@ -171,13 +178,13 @@ npx claude-orchestra stop && npx claude-orchestra start --daemon
 
 ## Troubleshooting
 
-| Problem            | Solution                                                           |
-| ------------------ | ------------------------------------------------------------------ |
-| No sound           | Check `npx claude-orchestra status` — is it running?               |
-| "sox not found"    | `brew install sox`                                                 |
-| "ffplay not found" | `brew install ffmpeg`                                              |
-| Sync issues        | Switch to mixer mode: `npx claude-orchestra config set mode mixer` |
-| Too loud/quiet     | `npx claude-orchestra volume 0.3`                                  |
+| Problem            | Solution                                             |
+| ------------------ | ---------------------------------------------------- |
+| No sound           | Check `npx claude-orchestra status` — is it running? |
+| "sox not found"    | `brew install sox`                                   |
+| "ffplay not found" | `brew install ffmpeg`                                |
+| No tracks          | Run `npx claude-orchestra setup` to render from MIDI |
+| Too loud/quiet     | `npx claude-orchestra volume 0.3`                    |
 
 ## Important Notes
 
