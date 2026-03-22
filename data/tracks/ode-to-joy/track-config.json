@@ -1,0 +1,28 @@
+{
+  "render": "midi",
+  "name": "Beethoven - Ode to Joy (Symphony No. 9)",
+  "timestamps": ["0:00", "0:28", "0:56", "1:24"],
+  "sectionNames": ["Theme", "Variation I", "Variation II", "Finale"],
+  "eventsPerSection": 8,
+  "loopLast": true,
+  "groups": [
+    {
+      "label": "Strings (melody)",
+      "tracks": [1, 2, 3, 4],
+      "priority": 4,
+      "volume": 0.7
+    },
+    {
+      "label": "Strings (bass)",
+      "tracks": [6],
+      "priority": 3,
+      "volume": 0.6
+    },
+    {
+      "label": "Bassoon",
+      "tracks": [5],
+      "priority": 2,
+      "volume": 0.6
+    }
+  ]
+}
