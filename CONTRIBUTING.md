@@ -16,7 +16,7 @@ npm run check  # lint + format + test
 ```
 bin/conductor.js          CLI entrypoint (thin dispatcher)
 lib/conductor-cli.js      CLI commands and status display
-lib/conductor-daemon.js   Daemon lifecycle and event handling
+lib/conductor-daemon.js   Daemon lifecycle, event handling, status.json
 lib/engine.js             Engine factory (synth/mixer/sample)
 lib/mixer-engine.js       Sox pre-mix + ffplay playback
 lib/synth-engine.js       FFmpeg harmonic synthesis
@@ -26,6 +26,10 @@ lib/playback.js           Cross-platform player detection
 lib/music-theory.js       Scales, progressions, mappings
 lib/event-watcher.js      Filesystem event watcher
 lib/registry.js           Session → instrument assignment
+hooks/hooks.json          Plugin hook definitions
+commands/                 Slash commands (/status, /play)
+skills/                   Agent skills (/orchestra, /setup)
+output-styles/            Custom output styles
 test/                     Vitest unit tests
 ```
 
@@ -57,10 +61,20 @@ npm run format:check  # Prettier (check only)
 
 ## Adding a New Track
 
-1. Create a directory under `data/tracks/your-track/`
-2. Add `manifest.json` (see `data/tracks/demo/manifest.json` for format)
-3. Add section audio files under `sections/`
-4. Test with `claude-orchestra track add ./data/tracks/your-track`
+1. Find a public domain MIDI file
+2. Add it to `data/tracks/your-track/source.mid`
+3. Create a `README.md` with composer info, section timings, and license
+4. Add a `manifest.json` (see existing tracks for format)
+5. Include the MIDI in `package.json` `files` array
+6. Update the track table in `skills/orchestra/SKILL.md`
+
+### Rendering Stems Locally
+
+```bash
+fluidsynth -F /tmp/track.wav -r 44100 -ni /path/to/soundfont.sf2 source.mid
+python3 -m demucs -n htdemucs -o /tmp/stems /tmp/track.wav
+# Then split into sections using ffmpeg -ss/-t
+```
 
 ## Audio Sources
 
