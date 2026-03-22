@@ -1,6 +1,7 @@
 #!/bin/bash
-# Prepare an audio file as a Claude Orchestra track.
-# Uses demucs for stem separation and ffmpeg for section splitting.
+# Prepare an audio or MIDI file as a Claude Orchestra track.
+# For MIDI files (.mid): delegates to render-midi-tracks.sh (fluidsynth rendering)
+# For audio files: uses demucs for stem separation and ffmpeg for section splitting.
 #
 # Usage:
 #   ./bin/prepare-track.sh <input-file> [options]
@@ -67,6 +68,29 @@ fi
 if [ ! -f "$INPUT" ]; then
   echo "Error: file not found: $INPUT"
   exit 1
+fi
+
+# --- MIDI auto-detection ---
+# If input is a .mid file, delegate to render-midi-tracks.sh
+INPUT_EXT="${INPUT##*.}"
+if [ "$INPUT_EXT" = "mid" ] || [ "$INPUT_EXT" = "midi" ]; then
+  echo "🎵 MIDI file detected — using MIDI rendering pipeline"
+  TRACK_NAME="${TRACK_NAME:-$(basename "$INPUT" ".$INPUT_EXT")}"
+  OUTPUT_DIR="${OUTPUT_DIR:-$HOME/.claude-orchestra/tracks/$TRACK_NAME}"
+
+  # Build args for render-midi-tracks.sh
+  RENDER_ARGS=("$SCRIPT_DIR/render-midi-tracks.sh" "$INPUT" "$OUTPUT_DIR")
+  [ -n "$TRACK_NAME" ] && RENDER_ARGS+=(--name "$TRACK_NAME")
+  [ -n "$TIMESTAMPS" ] && RENDER_ARGS+=(--timestamps "$TIMESTAMPS")
+  [ "$EVENTS_PER_SECTION" != "8" ] && RENDER_ARGS+=(--events "$EVENTS_PER_SECTION")
+
+  # Check for track-config.json next to the MIDI file
+  INPUT_DIR="$(dirname "$INPUT")"
+  if [ -f "$INPUT_DIR/track-config.json" ]; then
+    RENDER_ARGS+=(--config "$INPUT_DIR/track-config.json")
+  fi
+
+  exec bash "${RENDER_ARGS[@]}"
 fi
 
 # --- Prerequisites ---
