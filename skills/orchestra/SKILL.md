@@ -9,14 +9,14 @@ You are helping the user control Claude Orchestra, a plugin that turns Claude Co
 
 ## Quick Reference
 
-| User says                              | What to do                                    |
-| -------------------------------------- | --------------------------------------------- |
-| "start music" / "orchestra" / "bgm on" | Run **Start with Dependency Check** flow      |
-| "stop music" / "quiet" / "bgm off"     | Stop the conductor                            |
-| "change track" / "play X"              | Switch track                                  |
-| "louder" / "quieter" / "volume X"      | Adjust volume                                 |
-| "what's playing" / "status"            | Show status                                   |
-| "switch to synth/mixer"                | Change mode                                   |
+| User says                              | What to do                               |
+| -------------------------------------- | ---------------------------------------- |
+| "start music" / "orchestra" / "bgm on" | Run **Start with Dependency Check** flow |
+| "stop music" / "quiet" / "bgm off"     | Stop the conductor                       |
+| "change track" / "play X"              | Switch track                             |
+| "louder" / "quieter" / "volume X"      | Adjust volume                            |
+| "what's playing" / "status"            | Show status                              |
+| "switch to synth/mixer"                | Change mode                              |
 
 ## Start with Dependency Check
 
@@ -50,21 +50,26 @@ Based on the dependency check results, **tell the user what you found and what y
 **Example messages:**
 
 - All deps present + tracks prepared:
+
   > "Dependencies are all installed and tracks are ready. Starting the orchestra in mixer mode."
 
 - Missing `sox`:
+
   > "sox が見つかりません。mixer モードでの音声ミキシングに必要です。`brew install sox` でインストールしてよいですか？ (synth モードなら sox なしでも動きます)"
 
 - Missing `ffmpeg` (or `ffplay`):
+
   > "ffmpeg が見つかりません。音声再生に必要です。`brew install ffmpeg` でインストールしてよいですか？"
 
 - No tracks prepared:
+
   > "トラックがまだ準備されていません。synth モード (電子音) で開始するか、セットアップスキル (/claude-orchestra:setup) でトラックを準備できます。どちらにしますか？"
 
 - All deps missing:
   > "以下の依存関係が不足しています:\n- ffmpeg (音声再生)\n- sox (音声ミキシング)\n\n`brew install ffmpeg sox` でまとめてインストールしてよいですか？ または synth モード (依存なし) で開始することもできます。"
 
 **Rules:**
+
 - **Never install anything without asking the user first**
 - Always explain what each dependency is for
 - Always offer synth mode as a zero-dependency alternative
@@ -73,11 +78,13 @@ Based on the dependency check results, **tell the user what you found and what y
 ### Step 3: Install missing dependencies (after user approval)
 
 macOS:
+
 ```bash
 brew install ffmpeg sox  # only the missing ones
 ```
 
 Linux:
+
 ```bash
 sudo apt install -y ffmpeg sox  # only the missing ones
 ```
@@ -85,12 +92,14 @@ sudo apt install -y ffmpeg sox  # only the missing ones
 ### Step 4: Configure and start
 
 If mixer deps are all present and tracks are prepared:
+
 ```bash
 npx claude-orchestra config set mode mixer
 npx claude-orchestra stop 2>/dev/null; npx claude-orchestra start --daemon
 ```
 
 If using synth mode (no track or deps missing):
+
 ```bash
 npx claude-orchestra config set mode synth
 npx claude-orchestra stop 2>/dev/null; npx claude-orchestra start --daemon
